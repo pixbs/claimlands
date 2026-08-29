@@ -17,6 +17,7 @@ use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+mod brief;
 mod deps;
 mod spec;
 mod text;
@@ -31,6 +32,7 @@ fn main() -> ExitCode {
         "spec-coverage" => spec::check(&root),
         "check-todos" => text::check_todos(&root),
         "check-commits" => text::check_commits(args.get(1).map(String::as_str)),
+        "brief" => brief::emit(args.get(1).map(String::as_str)),
         "ci" => run_all(&root),
         "help" | "--help" | "-h" => {
             print_help();
@@ -90,6 +92,10 @@ cargo xtask <command>
   check-todos          Verify every TODO names an issue
   check-commits [RANGE]  Verify no AI attribution in commit messages
   ci                   Run every check above
+
+  brief <ISSUE>        Print a ready-to-paste prompt for an agent to work
+                       that issue (needs the `gh` CLI, logged in)
+
   help                 Show this message"
     );
 }

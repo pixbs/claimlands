@@ -23,6 +23,41 @@ levels/88-share-codes
 The scope matches the crate labels on issues, so `gh issue list --label
 crate:core --label ready` is an agent's queue.
 
+## Dispatching an agent
+
+```bash
+cargo xtask brief 2
+```
+
+That prints a complete prompt for issue #2 — worktree and branch commands, what
+to read, the issue body, the definition of done, and the stop conditions — ready
+to paste into whatever agent you are using.
+
+**The prompt is deliberately thin, because the repository is thick.** Every rule
+worth stating lives in `AGENTS.md`, the per-crate `AGENTS.md`, `spec/rules/` and
+`docs/determinism.md`. A prompt that restated any of it would become a second
+source of truth and drift from the first, so the brief points at those files
+instead of copying them. It also strips the issue's own human-facing footer for
+the same reason.
+
+Three things *are* spelled out in the prompt, because they are the cases where a
+failing gate looks like an obstacle to remove rather than a bug to fix:
+
+| An agent sees | The prompt tells it |
+|---|---|
+| A golden replay hash changed | You changed behaviour. Do **not** `golden record` to make it pass — that deletes the only evidence the regression exists. |
+| `spec-coverage` fails | Write the rule in `spec/rules/` and add `covers!()`. The gate is telling you it is undocumented or untested. |
+| `check-deps` fails | You pointed a dependency the wrong way. Redesign — do not edit the layer table. |
+
+The single most valuable line is the first one. An agent that re-records a hash
+to get a green build has defeated the entire regression net in one commit, and
+the diff looks innocuous.
+
+The prompt also names the conditions to **stop and ask** rather than guess: work
+that needs another crate, ambiguous acceptance criteria, or a rule that is not
+written down yet. Those are the situations where a confident wrong answer costs
+more than a question.
+
 ## Stacked pull requests
 
 GitHub shipped native stacked pull requests to public preview on 2026-07-30, so
