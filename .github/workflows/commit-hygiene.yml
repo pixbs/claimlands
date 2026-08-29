@@ -66,8 +66,8 @@ jobs:
           done < <(git log --format='%h %s' "$base..$head")
           exit $failed
 
-  linked-issue:
-    name: closes an issue
+  pull-request:
+    name: pull request hygiene
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -77,16 +77,18 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      # The body goes in `env:`, never into the `run:` script. A pull request
-      # body is written by whoever opened it; interpolated into a shell, a body
-      # containing `$( )` or a backtick would execute as the runner. As an
-      # environment variable it is data, and `check-pr-body` reads it there.
+      # The body and branch go in `env:`, never into the `run:` script. A pull
+      # request body is written by whoever opened it, and a branch name is
+      # whatever they pushed; interpolated into a shell, either one containing
+      # `$( )` or a backtick would execute as the runner. As environment
+      # variables they are data, and `check-pr` reads them there.
       #
       # The step is skipped in the merge queue, where there is no pull request
       # to have a body — the job still reports success, so a required check
       # cannot stall the queue.
-      - name: Check the pull request body closes its issue
+      - name: Check the pull request closes its issue and claims no assistant
         if: github.event_name == 'pull_request'
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: cargo xtask check-pr-body
+          PR_BRANCH: ${{ github.head_ref }}
+        run: cargo xtask check-pr

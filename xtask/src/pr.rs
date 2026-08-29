@@ -1,24 +1,38 @@
-//! The pull-request body gate: a merge must close its issue.
+//! What a pull request must say about itself.
 //!
-//! GitHub closes an issue on merge only when the pull request **body** contains
-//! a closing keyword — `Closes #42`, `Fixes #42`, `Resolves #42`. A bare `#42`
-//! is a link, not an instruction, and the issue stays open.
+//! Three rules, checked together so an author fixes all of them in one pass
+//! rather than one per CI run:
 //!
-//! That is easy to get wrong here, because the commit convention
-//! (`feat(worldgen): build the dual (#2)`) looks like it should be enough, and
-//! `gh pr create --fill` copies the commit message over the template that would
-//! have carried the keyword. The result is silent: the pull request merges, CI
-//! is green, and the issue is still open with nothing to say it was done.
+//! 1. **It closes its issue.** GitHub closes an issue on merge only when the
+//!    **body** contains a closing keyword — `Closes #42`, `Fixes #42`,
+//!    `Resolves #42`. A bare `#42` is a link, not an instruction, and the issue
+//!    stays open. That is easy to get wrong here, because the commit convention
+//!    (`feat(worldgen): build the dual (#2)`) looks like it should be enough,
+//!    and `gh pr create --fill` copies the commit message over the template
+//!    that would have carried the keyword. The result is silent: the pull
+//!    request merges, CI is green, and the issue is still open with nothing to
+//!    say it was done.
+//! 2. **The body names no AI assistant.** The same ban `check-commits` applies
+//!    to commit messages and authorship, applied to the one surface it could
+//!    not reach. A "Generated with …" footer records the wrong author of the
+//!    change just as surely as a trailer does.
+//! 3. **Neither does the branch.** `claude/fix-the-thing` says the assistant
+//!    owns the work. A branch is named for what the change does.
+//!
+//! Rules 2 and 3 share [`crate::text::BANNED_ATTRIBUTION`] with the commit
+//! gate, so a name banned in one place is banned in all of them.
 //!
 //! # Why the body arrives in the environment
 //!
 //! A pull request body is written by whoever opened it, which on a public
 //! repository is anyone. Interpolating it into a workflow's `run:` script —
-//! `cargo xtask check-pr-body "${{ github.event.pull_request.body }}"` — pastes
-//! that text straight into a shell, and a body containing a backtick or `$( )`
+//! `cargo xtask check-pr "${{ github.event.pull_request.body }}"` — pastes that
+//! text straight into a shell, and a body containing a backtick or `$( )`
 //! executes as the runner. So the workflow puts it in `env:` instead, where it
 //! is data rather than script, and this reads it from there.
 
+use crate::bullets;
+use crate::text::attribution_in;
 use std::fmt::Write as _;
 
 /// The keywords GitHub actually honours.
@@ -34,6 +48,9 @@ const KEYWORDS: [&str; 9] = [
 /// The environment variable the workflow puts the body in.
 const BODY_VAR: &str = "PR_BODY";
 
+/// The environment variable the workflow puts the source branch in.
+const BRANCH_VAR: &str = "PR_BRANCH";
+
 pub fn check() -> Result<String, String> {
     let body = std::env::var(BODY_VAR).map_err(|_| {
         format!(
@@ -41,17 +58,57 @@ pub fn check() -> Result<String, String> {
              This gate reads the pull request body from the environment rather \
              than from an argument, because a body is untrusted text and a \
              shell would run it. To try it by hand:\n\n    \
-             PR_BODY='Closes #42' cargo xtask check-pr-body"
+             PR_BODY='Closes #42' cargo xtask check-pr"
         )
     })?;
 
-    judge(&body)
+    // The branch is optional so the one-liner above still works. CI always
+    // supplies it.
+    let branch = std::env::var(BRANCH_VAR)
+        .ok()
+        .filter(|b| !b.trim().is_empty());
+
+    judge(&body, branch.as_deref())
 }
 
-fn judge(body: &str) -> Result<String, String> {
+/// Every rule at once.
+///
+/// All three are reported together rather than short-circuiting on the first,
+/// because each costs a full CI round trip to discover.
+fn judge(body: &str, branch: Option<&str>) -> Result<String, String> {
+    let mut problems = Vec::new();
+    let mut passed = Vec::new();
+
     match closing_reference(body) {
-        Some(issue) => Ok(format!("the body closes #{issue}")),
-        None => Err(explain(body)),
+        Some(issue) => passed.push(format!("closes #{issue}")),
+        None => problems.push(explain(body)),
+    }
+
+    match attribution_in(body) {
+        Some(banned) => problems.push(format!(
+            "the body mentions `{banned}`. A pull request records who is \
+             responsible for a change, and that is never an assistant — no \
+             \"Generated with …\" footer, no co-author line. The same ban \
+             applies to commit messages (see CONTRIBUTING.md)."
+        )),
+        None => passed.push("names no assistant".to_owned()),
+    }
+
+    if let Some(branch) = branch {
+        match attribution_in(branch) {
+            Some(banned) => problems.push(format!(
+                "the branch `{branch}` is named after `{banned}`. Branches are \
+                 named for what the change does: `<scope>/<issue>-<slug>`, as in \
+                 `worldgen/2-goldberg-dual` (see docs/agent-workflow.md)."
+            )),
+            None => passed.push(format!("branch `{branch}` is named for the work")),
+        }
+    }
+
+    if problems.is_empty() {
+        Ok(passed.join(", "))
+    } else {
+        Err(bullets(problems))
     }
 }
 
@@ -263,27 +320,94 @@ mod tests {
 
     #[test]
     fn an_empty_body_is_refused_with_the_fill_explanation() {
-        let err = judge("").unwrap_err();
+        let err = judge("", None).unwrap_err();
         assert!(err.contains("--fill"), "got: {err}");
     }
 
     #[test]
     fn an_unfilled_template_is_refused_with_its_own_explanation() {
-        let err = judge("Closes #\n\n## What changed").unwrap_err();
+        let err = judge("Closes #\n\n## What changed", None).unwrap_err();
         assert!(err.contains("still blank"), "got: {err}");
     }
 
     #[test]
     fn a_bare_reference_is_refused_with_the_number_it_should_have_closed() {
-        let err = judge("feat(worldgen): build the dual (#2)").unwrap_err();
+        let err = judge("feat(worldgen): build the dual (#2)", None).unwrap_err();
         assert!(err.contains("Closes #2"), "got: {err}");
     }
 
     #[test]
-    fn a_good_body_reports_which_issue_it_closes() {
-        assert_eq!(
-            judge("Closes #40\n\nAll of it.").unwrap(),
-            "the body closes #40"
-        );
+    fn a_good_body_on_a_well_named_branch_passes() {
+        let ok = judge(
+            "Closes #40\n\nAll of it.",
+            Some("tooling/40-close-the-issue"),
+        )
+        .unwrap();
+        assert!(ok.contains("closes #40"), "got: {ok}");
+        assert!(ok.contains("names no assistant"), "got: {ok}");
+    }
+
+    #[test]
+    fn a_generated_with_footer_is_refused() {
+        // The exact thing this rule exists for.
+        let err = judge(
+            "Closes #40\n\nDid the work.\n\nGenerated with Claude Code",
+            None,
+        )
+        .unwrap_err();
+        assert!(err.contains("responsible"), "got: {err}");
+    }
+
+    #[test]
+    fn a_co_author_trailer_in_the_body_is_refused() {
+        let err = judge("Closes #40\n\nCo-Authored-By: Claude <noreply@x>", None).unwrap_err();
+        assert!(err.contains("claude"), "got: {err}");
+    }
+
+    #[test]
+    fn a_branch_named_after_an_assistant_is_refused() {
+        let err = judge("Closes #40", Some("claude/fix-the-thing")).unwrap_err();
+        assert!(err.contains("claude/fix-the-thing"), "got: {err}");
+        assert!(err.contains("<scope>/<issue>-<slug>"), "got: {err}");
+    }
+
+    #[test]
+    fn the_branch_check_is_case_insensitive() {
+        assert!(judge("Closes #40", Some("Claude/Thing")).is_err());
+        assert!(judge("Closes #40", Some("codex/thing")).is_err());
+    }
+
+    #[test]
+    fn an_ordinary_branch_name_is_left_alone() {
+        for branch in [
+            "worldgen/2-goldberg-dual",
+            "cli/34-export-a-planet",
+            "core/42-territory-split",
+        ] {
+            assert!(judge("Closes #1", Some(branch)).is_ok(), "{branch}");
+        }
+    }
+
+    #[test]
+    fn every_failure_is_reported_at_once() {
+        // Each one costs a CI round trip to discover, so they arrive together.
+        let err = judge(
+            "no keyword here, Generated with an assistant",
+            Some("claude/x"),
+        )
+        .unwrap_err();
+        assert!(err.contains("closing keyword"), "got: {err}");
+        assert!(err.contains("responsible"), "got: {err}");
+        assert!(err.contains("named after"), "got: {err}");
+        assert_eq!(err.lines().filter(|l| l.starts_with("  - ")).count(), 3);
+    }
+
+    #[test]
+    fn the_banned_list_is_shared_with_the_commit_gate() {
+        // If these ever diverge, a name banned in a commit could still be used
+        // for a branch, which is the hole this sharing exists to close.
+        use crate::text::BANNED_ATTRIBUTION;
+        assert!(BANNED_ATTRIBUTION.contains(&"claude"));
+        assert!(BANNED_ATTRIBUTION.contains(&"generated with"));
     }
 }

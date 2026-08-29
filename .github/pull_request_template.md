@@ -4,7 +4,7 @@
 
   The line below is the one that matters mechanically: fill in the issue
   number. `Closes #42` is what makes the merge close the issue — a bare `#42`
-  only links it. `cargo xtask check-pr-body` fails the build if it is missing,
+  only links it. `cargo xtask check-pr` fails the build if it is missing,
   and `gh pr create --fill` discards this whole template, so do not use it.
 -->
 

@@ -69,7 +69,7 @@ dispatched from a brief merged green and left its issue open — #2 and #34 sat
 that way until someone read the issue list.
 
 The generated brief is the only place most agents will look, so a workflow rule
-that is not in it is a rule that does not happen. `cargo xtask check-pr-body`
+that is not in it is a rule that does not happen. `cargo xtask check-pr`
 backs it up mechanically, for the same reason the attribution ban has a CI job
 as well as a hook.
 
