@@ -83,6 +83,11 @@ cargo xtask ci
 
 All four must pass. CI runs the same commands plus the mobile builds.
 
+The PR **body** must start with `Closes #<issue>`. The `(#42)` in your commit
+subject links the issue; only the body closes it. Do not use `gh pr create
+--fill` — it overwrites the template that carries the keyword.
+`cargo xtask check-pr-body` fails the build without it.
+
 ## 7. Commits
 
 Conventional Commits, scope = crate:

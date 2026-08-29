@@ -1,10 +1,11 @@
 name: Commit hygiene
 
-# The attribution ban, enforced where `--no-verify` cannot reach.
+# What a pull request must say about itself, enforced where `--no-verify`
+# cannot reach.
 #
-# The local `.githooks/commit-msg` hook catches this first, but a hook is a
-# convenience the author can skip. This job is required by branch protection,
-# so the merge queue cannot admit a violating commit.
+# The local `.githooks/commit-msg` hook catches the attribution ban first, but a
+# hook is a convenience the author can skip. These jobs are required by branch
+# protection, so the merge queue cannot admit a violating pull request.
 
 on:
   pull_request:
@@ -64,3 +65,28 @@ jobs:
             fi
           done < <(git log --format='%h %s' "$base..$head")
           exit $failed
+
+  linked-issue:
+    name: closes an issue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The body goes in `env:`, never into the `run:` script. A pull request
+      # body is written by whoever opened it; interpolated into a shell, a body
+      # containing `$( )` or a backtick would execute as the runner. As an
+      # environment variable it is data, and `check-pr-body` reads it there.
+      #
+      # The step is skipped in the merge queue, where there is no pull request
+      # to have a body — the job still reports success, so a required check
+      # cannot stall the queue.
+      - name: Check the pull request body closes its issue
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: cargo xtask check-pr-body

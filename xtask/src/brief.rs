@@ -237,7 +237,19 @@ Do not restate those rules back to me — just follow them.
     cargo test --workspace
     cargo xtask ci
 
-Then `gh pr create --fill --base master`. **Never push to `master` directly.**
+Then open the pull request against `master`. **Never push to `master` directly.**
+
+Write the body from `.github/pull_request_template.md` and keep its first line,
+with the number filled in:
+
+    Closes #{number}
+
+Do **not** use `gh pr create --fill`. It replaces the body with your commit
+message, and the commit convention (`(#{number})`) is a bare reference that links
+the issue without closing it — the pull request merges and the issue stays open.
+`cargo xtask check-pr-body` runs on every pull request and will fail.
+
+    gh pr create --base master --title "<your commit subject>" --body-file <your body>
 
 ## Three failures that look like obstacles but are findings
 
