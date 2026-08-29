@@ -301,6 +301,7 @@ name = "lands-worldgen"
 version = "0.1.0"
 dependencies = [
  "lands-core",
+ "lands-testkit",
 ]
 
 [[package]]

@@ -7,19 +7,21 @@
 //! of which exactly twelve — the icosahedron's own corners — are pentagons and
 //! the rest hexagons.
 //!
-//! This module is the first half of that: [`icosahedron`] and [`geodesic`]
-//! build the triangle mesh. The dual, the tile graph and terrain come later
-//! and sit on top of it.
+//! [`icosahedron`] and [`geodesic`] build the triangle mesh; [`goldberg`]
+//! turns it inside out into the tiles the game is played on. Terrain and cover
+//! come later and sit on top of that.
 //!
 //! # What this crate owes the rest of the game
 //!
-//! `lands-core` never sees a coordinate — it asks spatial questions in graph
-//! hops (`lands_core::topology`), so the planet's geometry can change without
+//! One thing: [`Goldberg::topology`], a `lands_core::Topology`. `lands-core`
+//! never sees a coordinate — it asks spatial questions in graph hops
+//! (`lands_core::topology`), so the planet's geometry can change without
 //! touching a line of game logic. What it may not change is **vertex order**:
 //! tile ids in saved levels and in the golden replay corpus are indices into
 //! the order [`geodesic`] produces, so reordering it renumbers every tile on
-//! every stored planet. [`Geodesic::structure_hash`] pins that order in a test
-//! so an accidental change is caught here rather than in a save file.
+//! every stored planet. [`Geodesic::structure_hash`] and
+//! [`Goldberg::adjacency_hash`] pin that order in a test so an accidental
+//! change is caught here rather than in a save file.
 //!
 //! Floating point is allowed in this crate and forbidden in `lands-core`. That
 //! is not an inconsistency: the mesh is built once per match from an integer
@@ -31,10 +33,14 @@
 #![forbid(unsafe_code)]
 #![warn(missing_debug_implementations)]
 
+mod digest;
+
 pub mod geodesic;
+pub mod goldberg;
 pub mod icosahedron;
 pub mod vec3;
 
 pub use geodesic::{Geodesic, LatticeKey, geodesic, triangle_count, vertex_count};
+pub use goldberg::{Cell, Goldberg, dual, goldberg};
 pub use icosahedron::{Icosahedron, icosahedron};
 pub use vec3::Vec3;

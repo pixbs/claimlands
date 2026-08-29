@@ -7,3 +7,6 @@ publish.workspace = true
 
 [dependencies]
 lands-core = { workspace = true }
+
+[dev-dependencies]
+lands-testkit = { workspace = true }
