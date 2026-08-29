@@ -222,6 +222,7 @@ dependencies = [
  "lands-core",
  "lands-rules",
  "lands-testkit",
+ "lands-worldgen",
  "ron",
 ]
 
