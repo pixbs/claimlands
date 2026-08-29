@@ -27,7 +27,9 @@ members = [
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.92"
-license = "UNLICENSED"
+# No `license` field: these crates are unpublished (`publish = false`) and are
+# not distributed as source, so there is nothing to license. "UNLICENSED" is an
+# npm convention, not a valid SPDX expression, and cargo-deny rejects it.
 publish = false
 
 [workspace.dependencies]

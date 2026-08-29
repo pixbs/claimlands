@@ -13,20 +13,45 @@ yanked = "deny"
 
 [licenses]
 version = 2
+# Some of these are not used by any current dependency, which cargo-deny reports
+# as a `license-not-encountered` warning. That is expected and the entries are
+# deliberate: the graphics stack arriving in M6 (wgpu and its dependencies)
+# brings Zlib, CC0-1.0 and MPL-2.0 with it. Removing them now only means adding
+# them back later during an unrelated change.
 allow = ["MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Zlib", "CC0-1.0", "MPL-2.0"]
 confidence-threshold = 0.9
 
+# This game's own crates are unpublished (`publish = false` in the workspace),
+# so they have no licence to check and are not distributed as source. Without
+# this, cargo-deny reports every one of them as "unlicensed" and the gate fails
+# on our own code rather than on a dependency, which is the opposite of what it
+# is for.
+private = { ignore = true }
+
 [bans]
 multiple-versions = "warn"
+# A wildcard version on a third-party crate means an unreviewed upgrade can
+# arrive silently, so it stays denied. Intra-workspace path dependencies are
+# wildcards by nature and are exempt — they resolve to the code in this
+# repository, which is reviewed by definition.
 wildcards = "deny"
+allow-wildcard-paths = true
 
-# civ-core must stay deterministic and allocation-predictable. These crates are
-# the usual ways determinism is lost by accident.
+# civ-core must stay deterministic. These crates are the usual ways that gets
+# lost by accident — an unseeded `thread_rng`, or a wall clock read somewhere in
+# a turn resolution.
+#
+# `wrappers` lists the only crates permitted to pull a banned crate in. proptest
+# needs `rand` to generate cases and is a dev-dependency, so it never reaches a
+# device; anything else reaching for `rand` is a bug, because simulation
+# randomness must come from `civ_core::rng::stream` (see docs/determinism.md).
 deny = [
-    { name = "rand",       wrappers = [] },   # unseeded thread_rng is a determinism hazard
-    { name = "fastrand" },
+    { name = "rand", wrappers = ["proptest"] },
+    # fastrand arrives as fastrand <- tempfile <- proptest, so `tempfile` is the
+    # direct wrapper cargo-deny needs named here.
+    { name = "fastrand", wrappers = ["tempfile"] },
     { name = "instant" },
-    { name = "chrono",     wrappers = [] },   # no wall-clock in a deterministic sim
+    { name = "chrono" },
 ]
 
 [sources]
