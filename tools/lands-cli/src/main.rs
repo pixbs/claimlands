@@ -1,15 +1,19 @@
 //! Headless tooling for the simulation.
 //!
 //! This is how the game is exercised without a renderer: playing whole matches,
-//! fuzzing for invariant violations, and recording or verifying the golden
-//! replays that guard every rule.
+//! fuzzing for invariant violations, recording or verifying the golden replays
+//! that guard every rule, and writing a generated planet to a file so worldgen
+//! can be looked at before a renderer exists.
 //!
 //! ```text
 //! cargo run -p lands-cli -- fuzz --matches 5000
 //! cargo run -p lands-cli -- play --seed 42 --stats
 //! cargo run -p lands-cli -- golden verify
 //! cargo run -p lands-cli -- golden record tests/replays/capital-split.ron
+//! cargo run -p lands-cli -- worldgen export --freq 8 --out planet.obj
 //! ```
+
+mod worldgen;
 
 use clap::{Parser, Subcommand};
 use lands_core::apply::legal_commands;
@@ -62,6 +66,12 @@ enum Command {
         action: GoldenAction,
     },
 
+    /// Look at what the planet generator produces.
+    Worldgen {
+        #[command(subcommand)]
+        action: WorldgenAction,
+    },
+
     /// Print the hash of the bundled ruleset.
     RulesHash,
 }
@@ -78,6 +88,27 @@ enum GoldenAction {
     /// Do this in a commit of its own, so a reviewer can see exactly which
     /// scenarios a rule change moved.
     Record { file: PathBuf },
+}
+
+#[derive(Subcommand)]
+enum WorldgenAction {
+    /// Write a generated planet to a file a human can open.
+    ///
+    /// OBJ opens in any 3D viewer; JSON carries the tile ids, neighbour lists
+    /// and fingerprints that OBJ cannot. Both are byte-identical across runs.
+    Export {
+        /// Subdivision frequency. The planet is `10n^2 + 2` tiles.
+        #[arg(long, default_value_t = 8)]
+        freq: u32,
+        #[arg(long, value_enum, default_value_t = worldgen::Format::Obj)]
+        format: worldgen::Format,
+        /// The tile board, or the triangle mesh it is the dual of.
+        #[arg(long, value_enum, default_value_t = worldgen::Kind::Tiles)]
+        kind: worldgen::Kind,
+        /// Where to write it. Overwritten if it already exists.
+        #[arg(long)]
+        out: PathBuf,
+    },
 }
 
 fn main() -> ExitCode {
@@ -102,6 +133,14 @@ fn run(cli: Cli) -> Result<(), String> {
         Command::Golden { action } => match action {
             GoldenAction::Verify { dir } => verify_golden(&dir),
             GoldenAction::Record { file } => record_golden(&file),
+        },
+        Command::Worldgen { action } => match action {
+            WorldgenAction::Export {
+                freq,
+                format,
+                kind,
+                out,
+            } => worldgen::export(freq, format, kind, &out),
         },
         Command::RulesHash => {
             println!("{:#018x}", Ruleset::bundled().hash());

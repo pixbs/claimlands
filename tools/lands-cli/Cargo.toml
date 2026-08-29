@@ -8,6 +8,7 @@ publish.workspace = true
 [dependencies]
 lands-core = { workspace = true }
 lands-rules = { workspace = true }
+lands-worldgen = { workspace = true }
 lands-testkit = { workspace = true }
 clap = { workspace = true }
 ron = { workspace = true }
