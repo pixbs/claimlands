@@ -17,17 +17,17 @@ that is how two agents end up editing the same file from opposite directions.
 The dependency graph is the isolation guarantee, and it is enforced:
 
 ```
-civ-rules → civ-core → { civ-worldgen, civ-ai, civ-levels } → civ-procgen
-          → civ-render → civ-app → civ-ffi → platforms/
+lands-rules → lands-core → { lands-worldgen, lands-ai, lands-levels } → lands-procgen
+            → lands-render → lands-app → lands-ffi → platforms/
 ```
 
-**No dependency may ever point back toward `civ-core`.** `cargo xtask check-deps`
+**No dependency may ever point back toward `lands-core`.** `cargo xtask check-deps`
 fails the build if one does. See `docs/architecture.md` §3.
 
-## 2. `civ-core` is sacred
+## 2. `lands-core` is sacred
 
 The simulation must produce identical results on every machine, forever.
-Inside `civ-core`:
+Inside `lands-core`:
 
 - **No floating point.** `#![deny(clippy::float_arithmetic)]` is on. Resources
   are integers; distances are graph hops.
@@ -68,7 +68,7 @@ test cites an id that does not exist. Adding a rule means adding it to the spec
 your change moves a hash, it changed behaviour.
 
 - If that was **intended**, re-record with
-  `cargo run -p civ-cli -- golden record <file>` **in a separate commit**, and
+  `cargo run -p lands-cli -- golden record <file>` **in a separate commit**, and
   say in the PR why each scenario moved.
 - If it was **not** intended, you have found your regression. Do not re-record.
 
@@ -113,7 +113,7 @@ git config core.hooksPath .githooks
 |---|---|
 | `spec/rules/` | **Source of truth for game rules.** Prose, with stable ids. Every rule is settled and carries its own reasoning — where the design brief was vague, the spec says what was chosen and why. Do not treat a rule as provisional. |
 | `docs/architecture.md` | The crate graph and why it is shaped this way. |
-| `docs/determinism.md` | The rules that keep replays reproducible. Read before touching `civ-core`. |
+| `docs/determinism.md` | The rules that keep replays reproducible. Read before touching `lands-core`. |
 | `docs/adr/` | Decisions already made. Do not re-litigate; write a new ADR instead. |
 | `assets/rules/default.ron` | Every balance number. |
 | `reference/prototype/` | The original Three.js prototype — the visual oracle. |

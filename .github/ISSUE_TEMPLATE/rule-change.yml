@@ -52,7 +52,7 @@ body:
       options:
         - Data only (a number in assets/rules/default.ron)
         - Data plus new ruleset fields
-        - New behaviour in civ-core
+        - New behaviour in lands-core
     validations:
       required: true
 

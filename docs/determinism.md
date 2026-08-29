@@ -1,6 +1,6 @@
 # Determinism
 
-Read this before changing anything in `civ-core`.
+Read this before changing anything in `lands-core`.
 
 ## Why it matters
 
@@ -22,7 +22,7 @@ it from the first line of code.
 
 ## The four rules
 
-### 1. No floating point in `civ-core`
+### 1. No floating point in `lands-core`
 
 `#![deny(clippy::float_arithmetic)]` is on and must stay on.
 
@@ -48,7 +48,7 @@ Distances are **graph hops**, not Euclidean (see below).
 seed, which changes per process. Iterating one to pick "the first valid
 candidate" gives a different answer on every run.
 
-Use `BTreeMap`, `BTreeSet` or `Vec`. Every collection in `civ-core` already
+Use `BTreeMap`, `BTreeSet` or `Vec`. Every collection in `lands-core` already
 does. `Topology::new` even sorts the neighbour lists it is given, because BFS
 tie-breaks depend on that order.
 
@@ -79,7 +79,7 @@ vectors in `rng.rs`.
 
 ### 4. No clock, no filesystem, no threads
 
-`civ-core` has no notion of wall time and does no I/O. `chrono` and `instant`
+`lands-core` has no notion of wall time and does no I/O. `chrono` and `instant`
 are banned in `deny.toml`. Anything that varies between runs varies between
 players.
 
@@ -88,7 +88,7 @@ players.
 ## Why the simulation has no coordinates
 
 The planet is a Goldberg polyhedron, so tiles have 3D positions — but
-`civ-core` does not know them.
+`lands-core` does not know them.
 
 Every spatial question the rules ask is answered in **graph hops**:
 
@@ -100,7 +100,7 @@ Every spatial question the rules ask is answered in **graph hops**:
 
 This buys three things at once: it is integer (rule 1), it is closer to what a
 hex-game player actually perceives than Euclidean distance, and it means
-`civ-worldgen` can change the planet's geometry without touching a line of game
+`lands-worldgen` can change the planet's geometry without touching a line of game
 logic.
 
 ---
@@ -113,7 +113,7 @@ logic.
 | `the_same_seed_always_plays_the_same_match` | Two runs in one process agree |
 | `replaying_a_random_match_reproduces_it_exactly` | A command log reproduces its own match |
 | CI `determinism` job | Linux, macOS and Windows all agree |
-| `civ-cli fuzz` | Hundreds of thousands of commands hold the invariants |
+| `lands-cli fuzz` | Hundreds of thousands of commands hold the invariants |
 
 The CI matrix is the one that matters for multiplayer: it is the only check
 that would catch an architecture-dependent difference.

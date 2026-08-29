@@ -1,0 +1,13 @@
+[package]
+name = "lands-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+lands-core = { workspace = true }
+lands-rules = { workspace = true }
+lands-testkit = { workspace = true }
+clap = { workspace = true }
+ron = { workspace = true }

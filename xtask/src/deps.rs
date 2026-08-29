@@ -2,7 +2,7 @@
 //!
 //! The crate graph is the isolation guarantee that lets many agents work in
 //! parallel. `cargo-deny` can ban third-party crates but cannot express "no
-//! edge may point back toward `civ-core`", so that rule lives here.
+//! edge may point back toward `lands-core`", so that rule lives here.
 //!
 //! Each crate is assigned a layer. A crate may depend only on **strictly
 //! lower** layers. If you find yourself wanting to raise a layer to make a
@@ -16,28 +16,28 @@ use std::path::Path;
 ///
 /// Keep this table and `docs/architecture.md` §3 in step.
 const LAYERS: &[(&str, u32)] = &[
-    ("civ-rules", 0),    // pure data definitions
-    ("civ-core", 1),     // the simulation
-    ("civ-worldgen", 2), // planet generation
-    ("civ-ai", 2),       // brains; emit commands, never mutate
-    ("civ-levels", 2),   // level format
-    ("civ-procgen", 3),  // CPU meshes and textures, no GPU types
-    ("civ-render", 4),   // wgpu
-    ("civ-app", 5),      // orchestration
-    ("civ-ffi", 6),      // C ABI for the shells
-    ("civ-desktop", 7),  // dev harness
-    ("civ-cli", 7),      // headless tools
+    ("lands-rules", 0),    // pure data definitions
+    ("lands-core", 1),     // the simulation
+    ("lands-worldgen", 2), // planet generation
+    ("lands-ai", 2),       // brains; emit commands, never mutate
+    ("lands-levels", 2),   // level format
+    ("lands-procgen", 3),  // CPU meshes and textures, no GPU types
+    ("lands-render", 4),   // wgpu
+    ("lands-app", 5),      // orchestration
+    ("lands-ffi", 6),      // C ABI for the shells
+    ("lands-desktop", 7),  // dev harness
+    ("lands-cli", 7),      // headless tools
     ("level-editor", 7),
 ];
 
 /// Test-only crates. They may depend on anything, but shipped code may only
 /// reach them from `[dev-dependencies]`.
-const TEST_ONLY: &[&str] = &["civ-testkit"];
+const TEST_ONLY: &[&str] = &["lands-testkit"];
 
 /// Crates that never ship to a player's device. They may use test scaffolding
 /// as an ordinary dependency, because there is no binary for it to bloat and
 /// no runtime for it to affect.
-const DEV_TOOLS: &[&str] = &["civ-cli", "level-editor", "xtask", "civ-desktop"];
+const DEV_TOOLS: &[&str] = &["lands-cli", "level-editor", "xtask", "lands-desktop"];
 
 pub fn check(root: &Path) -> Result<String, String> {
     let mut problems = Vec::new();
@@ -84,7 +84,7 @@ pub enum Section {
 fn judge(from: &str, to: &str, section: Section) -> Option<String> {
     if TEST_ONLY.contains(&to) {
         // A dev-dependency on the testkit is exactly what it is for, including
-        // civ-core's own tests depending on it — Cargo allows that cycle.
+        // lands-core's own tests depending on it — Cargo allows that cycle.
         // Dev tools never ship, so they may use it outright.
         if section == Section::Dev || DEV_TOOLS.contains(&from) {
             return None;
@@ -138,7 +138,7 @@ fn package_name(manifest: &str) -> Option<String> {
 /// Workspace-internal dependencies declared by a manifest, with their section.
 ///
 /// A deliberately small TOML reader: it only needs to recognise
-/// `civ-x = { ... }` and `civ-x.workspace = true` at the top level of a
+/// `lands-x = { ... }` and `lands-x.workspace = true` at the top level of a
 /// dependency table, which is the only form this repo uses.
 fn workspace_deps(manifest: &str) -> Vec<(String, Section)> {
     let mut out = Vec::new();
@@ -164,7 +164,7 @@ fn workspace_deps(manifest: &str) -> Vec<(String, Section)> {
             continue;
         };
         let key = key.trim();
-        if key.starts_with("civ-") || key == "level-editor" || key == "xtask" {
+        if key.starts_with("lands-") || key == "level-editor" || key == "xtask" {
             out.push((key.to_owned(), section));
         }
     }
@@ -178,62 +178,62 @@ mod tests {
 
     #[test]
     fn reads_the_package_name() {
-        let manifest = "[package]\nname = \"civ-core\"\nversion = \"0.1.0\"\n";
-        assert_eq!(package_name(manifest).as_deref(), Some("civ-core"));
+        let manifest = "[package]\nname = \"lands-core\"\nversion = \"0.1.0\"\n";
+        assert_eq!(package_name(manifest).as_deref(), Some("lands-core"));
     }
 
     #[test]
     fn finds_dependencies_and_their_section() {
         let manifest = "\
 [package]
-name = \"civ-core\"
+name = \"lands-core\"
 
 [dependencies]
-civ-rules = { workspace = true }
+lands-rules = { workspace = true }
 serde = \"1\"
 
 [dev-dependencies]
-civ-testkit = { workspace = true }
+lands-testkit = { workspace = true }
 ";
         let deps = workspace_deps(manifest);
         assert_eq!(deps.len(), 2);
-        assert_eq!(deps[0].0, "civ-rules");
+        assert_eq!(deps[0].0, "lands-rules");
         assert!(deps[0].1 == Section::Normal);
-        assert_eq!(deps[1].0, "civ-testkit");
+        assert_eq!(deps[1].0, "lands-testkit");
         assert!(deps[1].1 == Section::Dev);
     }
 
     #[test]
     fn rejects_an_upward_dependency() {
         // The exact mistake this gate exists to catch.
-        assert!(judge("civ-core", "civ-render", Section::Normal).is_some());
-        assert!(judge("civ-core", "civ-worldgen", Section::Normal).is_some());
+        assert!(judge("lands-core", "lands-render", Section::Normal).is_some());
+        assert!(judge("lands-core", "lands-worldgen", Section::Normal).is_some());
     }
 
     #[test]
     fn accepts_a_downward_dependency() {
-        assert!(judge("civ-render", "civ-procgen", Section::Normal).is_none());
-        assert!(judge("civ-core", "civ-rules", Section::Normal).is_none());
+        assert!(judge("lands-render", "lands-procgen", Section::Normal).is_none());
+        assert!(judge("lands-core", "lands-rules", Section::Normal).is_none());
     }
 
     #[test]
     fn rejects_a_sideways_dependency() {
-        // Same layer: civ-ai and civ-worldgen must not know about each other.
-        assert!(judge("civ-ai", "civ-worldgen", Section::Normal).is_some());
+        // Same layer: lands-ai and lands-worldgen must not know about each other.
+        assert!(judge("lands-ai", "lands-worldgen", Section::Normal).is_some());
     }
 
     #[test]
     fn shipped_code_reaches_the_testkit_only_through_dev_dependencies() {
-        assert!(judge("civ-core", "civ-testkit", Section::Dev).is_none());
-        assert!(judge("civ-core", "civ-testkit", Section::Normal).is_some());
+        assert!(judge("lands-core", "lands-testkit", Section::Dev).is_none());
+        assert!(judge("lands-core", "lands-testkit", Section::Normal).is_some());
         assert!(
-            judge("civ-app", "civ-testkit", Section::Normal).is_some(),
+            judge("lands-app", "lands-testkit", Section::Normal).is_some(),
             "the app ships, so it must not carry test scaffolding"
         );
     }
 
     #[test]
     fn dev_tools_may_use_the_testkit_outright() {
-        assert!(judge("civ-cli", "civ-testkit", Section::Normal).is_none());
+        assert!(judge("lands-cli", "lands-testkit", Section::Normal).is_none());
     }
 }

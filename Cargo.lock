@@ -95,112 +95,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
-name = "civ-ai"
-version = "0.1.0"
-dependencies = [
- "civ-core",
- "civ-rules",
-]
-
-[[package]]
-name = "civ-app"
-version = "0.1.0"
-dependencies = [
- "civ-core",
- "civ-levels",
- "civ-render",
-]
-
-[[package]]
-name = "civ-cli"
-version = "0.1.0"
-dependencies = [
- "civ-core",
- "civ-rules",
- "civ-testkit",
- "clap",
- "ron",
-]
-
-[[package]]
-name = "civ-core"
-version = "0.1.0"
-dependencies = [
- "civ-rules",
- "civ-testkit",
- "proptest",
- "ron",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "civ-desktop"
-version = "0.1.0"
-dependencies = [
- "civ-app",
-]
-
-[[package]]
-name = "civ-ffi"
-version = "0.1.0"
-dependencies = [
- "civ-app",
-]
-
-[[package]]
-name = "civ-levels"
-version = "0.1.0"
-dependencies = [
- "civ-core",
- "civ-rules",
- "ron",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "civ-procgen"
-version = "0.1.0"
-dependencies = [
- "civ-worldgen",
-]
-
-[[package]]
-name = "civ-render"
-version = "0.1.0"
-dependencies = [
- "civ-procgen",
-]
-
-[[package]]
-name = "civ-rules"
-version = "0.1.0"
-dependencies = [
- "ron",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "civ-testkit"
-version = "0.1.0"
-dependencies = [
- "civ-core",
- "civ-rules",
- "ron",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "civ-worldgen"
-version = "0.1.0"
-dependencies = [
- "civ-core",
-]
-
-[[package]]
 name = "clap"
 version = "4.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -304,13 +198,119 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
+name = "lands-ai"
+version = "0.1.0"
+dependencies = [
+ "lands-core",
+ "lands-rules",
+]
+
+[[package]]
+name = "lands-app"
+version = "0.1.0"
+dependencies = [
+ "lands-core",
+ "lands-levels",
+ "lands-render",
+]
+
+[[package]]
+name = "lands-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "lands-core",
+ "lands-rules",
+ "lands-testkit",
+ "ron",
+]
+
+[[package]]
+name = "lands-core"
+version = "0.1.0"
+dependencies = [
+ "lands-rules",
+ "lands-testkit",
+ "proptest",
+ "ron",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "lands-desktop"
+version = "0.1.0"
+dependencies = [
+ "lands-app",
+]
+
+[[package]]
+name = "lands-ffi"
+version = "0.1.0"
+dependencies = [
+ "lands-app",
+]
+
+[[package]]
+name = "lands-levels"
+version = "0.1.0"
+dependencies = [
+ "lands-core",
+ "lands-rules",
+ "ron",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "lands-procgen"
+version = "0.1.0"
+dependencies = [
+ "lands-worldgen",
+]
+
+[[package]]
+name = "lands-render"
+version = "0.1.0"
+dependencies = [
+ "lands-procgen",
+]
+
+[[package]]
+name = "lands-rules"
+version = "0.1.0"
+dependencies = [
+ "ron",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "lands-testkit"
+version = "0.1.0"
+dependencies = [
+ "lands-core",
+ "lands-rules",
+ "ron",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "lands-worldgen"
+version = "0.1.0"
+dependencies = [
+ "lands-core",
+]
+
+[[package]]
 name = "level-editor"
 version = "0.1.0"
 dependencies = [
- "civ-core",
- "civ-rules",
- "civ-testkit",
  "clap",
+ "lands-core",
+ "lands-rules",
+ "lands-testkit",
  "ron",
 ]
 

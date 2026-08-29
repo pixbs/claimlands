@@ -13,7 +13,7 @@ the captured tile survives."
 
 ## Decision
 
-`civ-core` knows only adjacency. Every spatial question is answered by
+`lands-core` knows only adjacency. Every spatial question is answered by
 breadth-first search in hops. `Topology` holds neighbour lists and nothing else
 — no coordinates at all.
 
@@ -28,7 +28,7 @@ distance to every other tile in the territory.
 - **It matches what a player perceives.** On a hex board, "three tiles away" is
   what the player counts. Great-circle distance would occasionally disagree with
   the obvious answer, especially near the twelve pentagons.
-- **It decouples the rules from the geometry.** `civ-worldgen` can change tile
+- **It decouples the rules from the geometry.** `lands-worldgen` can change tile
   count, projection or subdivision without touching a line of game logic. Tests
   can use a five-tile line instead of a 642-tile sphere.
 
@@ -41,7 +41,7 @@ On a coordinate-based design this is a notorious source of bugs — wrap-around
 needs modulo arithmetic at every site that touches position, and the ones that
 get forgotten fail only at the seam, which is exactly where nobody tests.
 
-Because `civ-core` holds only an adjacency graph, **a sphere is just a graph
+Because `lands-core` holds only an adjacency graph, **a sphere is just a graph
 with no boundary**, and there is nothing to special-case. Movement BFS,
 territory connected-components and capital relocation are all correct on a
 closed surface for the same reason they are correct on a bounded one: they
@@ -60,15 +60,15 @@ otherwise:
   one, always, and on a perfectly symmetric ring it degrades to a
   deterministic tie-break rather than to nonsense.
 
-`crates/civ-core/tests/closed_surface.rs` is the evidence: it runs the rules on
+`crates/lands-core/tests/closed_surface.rs` is the evidence: it runs the rules on
 the dual of an icosahedron (the genuine `n = 1` planet — twelve pentagons) and
 on a wrapping torus. Those tests passed the first time they were run, with no
-change to `civ-core`.
+change to `lands-core`.
 
 ## Other consequences
 
 - Any future rule genuinely needing metric distance (a projectile arc, an area
-  effect) must either be expressed in hops or live outside `civ-core`.
+  effect) must either be expressed in hops or live outside `lands-core`.
 - Pentagon tiles have five neighbours instead of six, so hop distance is
   slightly anisotropic near them. This is a property of the board that players
   can see and reason about, not a bug.

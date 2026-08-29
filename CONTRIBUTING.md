@@ -23,10 +23,10 @@ cargo xtask ci
 Useful extras:
 
 ```bash
-cargo run -p civ-cli -- play --seed 42 --stats        # one headless match
-cargo run --release -p civ-cli -- fuzz --matches 2000 # invariant fuzzer
-cargo run -p civ-cli -- golden verify                 # the regression net
-PROPTEST_CASES=3000 cargo test -p civ-core --test properties
+cargo run -p lands-cli -- play --seed 42 --stats        # one headless match
+cargo run --release -p lands-cli -- fuzz --matches 2000 # invariant fuzzer
+cargo run -p lands-cli -- golden verify                 # the regression net
+PROPTEST_CASES=3000 cargo test -p lands-core --test properties
 ```
 
 ## Commit messages
@@ -81,5 +81,5 @@ The simulation is deterministic, so almost every bug is exactly reproducible.
 Find the seed — it turns a report into a test. The fuzzer prints one:
 
 ```bash
-cargo run --release -p civ-cli -- fuzz --matches 5000
+cargo run --release -p lands-cli -- fuzz --matches 5000
 ```

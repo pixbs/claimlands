@@ -2,7 +2,7 @@
 //!
 //! Run as `cargo xtask <command>` (see `.cargo/config.toml` for the alias).
 //!
-//! * `check-deps` — gate 6. Nothing may depend back toward `civ-core`.
+//! * `check-deps` — gate 6. Nothing may depend back toward `lands-core`.
 //! * `spec-coverage` — gate 12. Every documented rule has a test, and every
 //!   test cites a rule that exists.
 //! * `check-commits` — the attribution ban, enforced over a commit range.
@@ -90,7 +90,7 @@ fn print_help() {
         "\
 cargo xtask <command>
 
-  check-deps           Verify no crate depends back toward civ-core (gate 6)
+  check-deps           Verify no crate depends back toward lands-core (gate 6)
   spec-coverage        Verify every spec rule has a test and vice versa (gate 12)
   check-todos          Verify every TODO names an issue
   check-hooks          Verify every hook in .githooks/ is executable

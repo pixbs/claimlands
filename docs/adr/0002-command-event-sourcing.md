@@ -24,7 +24,7 @@ One pattern satisfies all four requirements, plus testing:
 | Undo | Restore the turn-start snapshot, replay all but the last command |
 | Replay | A save file *is* `(ruleset_hash, level, Vec<Command>)` |
 | AI | A brain emits the same commands a human does, so it cannot cheat |
-| Multiplayer | Ship `Command` over a transport; `civ-core` does not change |
+| Multiplayer | Ship `Command` over a transport; `lands-core` does not change |
 | Regression tests | A command log plus an expected state hash |
 
 Undo deserves a note: implementing it as "snapshot and replay" rather than as

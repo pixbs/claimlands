@@ -1,0 +1,9 @@
+[package]
+name = "lands-render"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+lands-procgen = { workspace = true }

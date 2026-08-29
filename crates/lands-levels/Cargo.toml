@@ -1,0 +1,13 @@
+[package]
+name = "lands-levels"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+lands-core = { workspace = true }
+lands-rules = { workspace = true }
+serde = { workspace = true, features = ["std"] }
+ron = { workspace = true }
+thiserror = { workspace = true }

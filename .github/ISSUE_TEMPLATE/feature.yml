@@ -16,15 +16,15 @@ body:
       label: Crate
       description: Which crate does this work live in? One issue, one crate.
       options:
-        - civ-rules
-        - civ-core
-        - civ-worldgen
-        - civ-ai
-        - civ-procgen
-        - civ-render
-        - civ-levels
-        - civ-app
-        - civ-ffi
+        - lands-rules
+        - lands-core
+        - lands-worldgen
+        - lands-ai
+        - lands-procgen
+        - lands-render
+        - lands-levels
+        - lands-app
+        - lands-ffi
         - platforms
         - tools
         - spec / docs
@@ -81,7 +81,7 @@ body:
         one is needed. Every new rule needs a `covers!(...)` declaration or
         gate 12 will fail.
       placeholder: |
-        - Unit test in crates/civ-core/tests/economy.rs covering ECON-0xx
+        - Unit test in crates/lands-core/tests/economy.rs covering ECON-0xx
         - Golden replay tests/replays/<name>.ron
     validations:
       required: true

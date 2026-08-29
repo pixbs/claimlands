@@ -10,20 +10,20 @@ touch. That is the point: it catches the regression nobody predicted.
 ## Running them
 
 ```bash
-cargo test -p civ-core --test golden
+cargo test -p lands-core --test golden
 ```
 
 or, with per-file output:
 
 ```bash
-cargo run -p civ-cli -- golden verify
+cargo run -p lands-cli -- golden verify
 ```
 
 ## Adding one
 
 1. Write the scenario as a new `.ron` file, copying the shape of an existing
    one. Set `ruleset_hash` and `expected_state_hash` to `0`.
-2. Run `cargo run -p civ-cli -- golden record tests/replays/your-file.ron`.
+2. Run `cargo run -p lands-cli -- golden record tests/replays/your-file.ron`.
 3. Read the resulting file and check the hash is being recorded against the
    behaviour you actually intended.
 4. Commit it. Fill in `description` with a sentence about what it protects, and
