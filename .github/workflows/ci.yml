@@ -3,8 +3,9 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master]
   merge_group:
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,6 +15,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# There is deliberately no `dtolnay/rust-toolchain` step anywhere in this repo.
+# `rust-toolchain.toml` pins the compiler and lists the components, and
+# `rustup toolchain install` with no arguments installs exactly that. Adding an
+# action that fetches a *different* toolchain means cargo still uses the pinned
+# one while components and targets land on the other — which is how the mobile
+# builds first broke ("can't find crate for `std`").
+
 jobs:
   # Gate 1: formatting and lints. Fast, so it runs first and alone.
   lint:
@@ -21,9 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --all-features
@@ -34,7 +41,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace --all-features
 
@@ -50,11 +58,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - name: Verify golden replays
         run: cargo run --release -p civ-cli -- golden verify
       - name: Fuzz the invariants
+        # Alternates bounded and wrapping arenas by seed parity, so a closed
+        # surface is covered without the workflow having to know.
         run: cargo run --release -p civ-cli -- fuzz --matches 300 --steps 400
 
   # Gates 6 and 12, plus TODO hygiene.
@@ -63,7 +74,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - run: cargo xtask ci
 
@@ -81,9 +93,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
+      # `llvm-tools` is listed in rust-toolchain.toml, so it arrives with the
+      # pinned toolchain rather than needing a separate install.
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cargo-llvm-cov
       - name: Measure

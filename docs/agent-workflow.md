@@ -31,9 +31,9 @@ no third-party service is needed.
 Manage the local branch chain with [git-town](https://www.git-town.com):
 
 ```bash
-git town hack   core/42-territory-split     # branch off main
+git town hack   core/42-territory-split     # branch off master
 git town append core/43-territory-merge     # branch off the previous one
-git town sync                               # rebase the whole chain on main
+git town sync                               # rebase the whole chain on master
 ```
 
 Then publish the chain:
@@ -55,7 +55,7 @@ Rules of thumb for stacking:
 
 ## Merge queue
 
-Enabled on `main`. Every pull request must be current with `main` before it
+Enabled on `master`. Every pull request must be current with `master` before it
 lands, which is what stops two independently-green changes from combining into
 a broken one.
 

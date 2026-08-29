@@ -3,10 +3,33 @@ name: Mobile builds
 # Gate 9. "It compiles on desktop" is not evidence that it compiles for a
 # phone, and finding out at release time is expensive.
 #
-# Scoped by `paths` so a pull request that only touches the simulation does not
-# pay for a twelve-minute NDK build.
+# `civ-ffi` is built as a staticlib (iOS) and cdylib (Android), which is what
+# the shells actually link — building it as an rlib would prove nothing.
+#
+# Targets are added with `rustup target add` rather than through a toolchain
+# action. rustup honours `rust-toolchain.toml`, so the target's `std` lands on
+# the *pinned* toolchain — the one cargo will actually use. Installing targets
+# onto a separately-fetched stable toolchain is what caused the original
+# "can't find crate for `std`" failure.
+#
+# The path filters are duplicated between the push and pull_request triggers
+# because GitHub Actions does not support YAML anchors. Keep them in step.
 
 on:
+  # Direct pushes to the default branch are checked too, so the result shows
+  # against the commit rather than only inside a pull request.
+  push:
+    branches: [master]
+    paths:
+      - "crates/civ-ffi/**"
+      - "crates/civ-app/**"
+      - "crates/civ-render/**"
+      - "crates/civ-procgen/**"
+      - "platforms/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
+      - ".github/workflows/mobile.yml"
   pull_request:
     paths:
       - "crates/civ-ffi/**"
@@ -19,6 +42,9 @@ on:
       - "rust-toolchain.toml"
       - ".github/workflows/mobile.yml"
   merge_group:
+  # So a fix for a broken mobile build can be verified without waiting for the
+  # nightly run or inventing a commit.
+  workflow_dispatch:
   schedule:
     # Once a night regardless, so drift is caught even when nobody touches
     # the paths above.
@@ -33,10 +59,11 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
+      - name: Add iOS targets to the pinned toolchain
+        run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
       - name: Build the static library
         run: |
           cargo build --release -p civ-ffi --target aarch64-apple-ios
@@ -47,10 +74,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android,armv7-linux-androideabi
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
+      - name: Add Android targets to the pinned toolchain
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi
       - uses: nttld/setup-ndk@v1
         id: ndk
         with:
@@ -69,9 +97,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
+      - name: Add the wasm target to the pinned toolchain
+        run: rustup target add wasm32-unknown-unknown
       - name: Build for the browser
         run: cargo build --release -p civ-app --target wasm32-unknown-unknown
