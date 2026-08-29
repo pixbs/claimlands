@@ -7,6 +7,7 @@
 //!   test cites a rule that exists.
 //! * `check-commits` — the attribution ban, enforced over a commit range.
 //! * `check-todos` — no bare `TODO`; every one must name an issue.
+//! * `check-hooks` — every hook in `.githooks/` is committed executable.
 //! * `ci` — all of the above.
 //!
 //! Dependency-free on purpose: this is the tool that guards the dependency
@@ -31,6 +32,7 @@ fn main() -> ExitCode {
         "check-deps" => deps::check(&root),
         "spec-coverage" => spec::check(&root),
         "check-todos" => text::check_todos(&root),
+        "check-hooks" => text::check_hooks(&root),
         "check-commits" => text::check_commits(args.get(1).map(String::as_str)),
         "brief" => brief::emit(args.get(1).map(String::as_str)),
         "ci" => run_all(&root),
@@ -63,6 +65,7 @@ fn run_all(root: &Path) -> Result<String, String> {
         ("check-deps", deps::check(root)),
         ("spec-coverage", spec::check(root)),
         ("check-todos", text::check_todos(root)),
+        ("check-hooks", text::check_hooks(root)),
     ] {
         match result {
             Ok(summary) => {
@@ -90,6 +93,7 @@ cargo xtask <command>
   check-deps           Verify no crate depends back toward civ-core (gate 6)
   spec-coverage        Verify every spec rule has a test and vice versa (gate 12)
   check-todos          Verify every TODO names an issue
+  check-hooks          Verify every hook in .githooks/ is executable
   check-commits [RANGE]  Verify no AI attribution in commit messages
   ci                   Run every check above
 

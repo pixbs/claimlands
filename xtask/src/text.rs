@@ -1,8 +1,10 @@
-//! Source and commit hygiene checks.
+//! Source, commit and hook hygiene checks.
 //!
 //! * [`check_todos`] — every `TODO` must name an issue, so intent is never
 //!   lost in a comment nobody is tracking.
 //! * [`check_commits`] — the attribution ban, enforced over a commit range.
+//! * [`check_hooks`] — every hook in `.githooks/` is executable, because git
+//!   ignores one that is not and says so only in a hint.
 
 use crate::{bullets, files_with_extension};
 use std::path::Path;
@@ -144,6 +146,77 @@ pub fn check_commits(range: Option<&str>) -> Result<String, String> {
     }
 }
 
+/// Verify every hook in `.githooks/` is committed executable.
+///
+/// Git silently declines to run a hook without the executable bit — the only
+/// sign is a `hint:` line that scrolls past — so the whole local half of the
+/// attribution ban can be lost without a single check going red. The bit is
+/// easy to drop: a rebase, a filesystem that does not carry it, an editor that
+/// writes a new hook 644. This gate is what notices.
+///
+/// The index mode is what other clones get, so that is what is checked; a
+/// working tree with `core.fileMode = false` would report the wrong thing.
+pub fn check_hooks(root: &Path) -> Result<String, String> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(root)
+        .args(["ls-files", "--stage", "--", ".githooks"])
+        .output()
+        .map_err(|e| format!("could not run git: {e}"))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "git ls-files failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+
+    let listing = String::from_utf8_lossy(&output.stdout);
+    let (checked, problems) = hook_modes(&listing);
+
+    if !problems.is_empty() {
+        return Err(format!(
+            "{}\n\nRestore the bit with `git update-index --chmod=+x <path>`.",
+            bullets(problems)
+        ));
+    }
+    if checked == 0 {
+        return Err(
+            "no hooks tracked under `.githooks/` — CONTRIBUTING.md tells every \
+             contributor to point `core.hooksPath` at it"
+                .to_string(),
+        );
+    }
+
+    Ok(format!("{checked} hook(s) in .githooks/, all executable"))
+}
+
+/// Split `git ls-files --stage` output into a count and the entries whose mode
+/// is not `100755`.
+fn hook_modes(listing: &str) -> (usize, Vec<String>) {
+    let mut checked = 0;
+    let mut problems = Vec::new();
+
+    for line in listing.lines().filter(|l| !l.trim().is_empty()) {
+        // `<mode> <object> <stage>\t<path>`
+        let Some((meta, path)) = line.split_once('\t') else {
+            continue;
+        };
+        let Some(mode) = meta.split_whitespace().next() else {
+            continue;
+        };
+        checked += 1;
+        if mode != "100755" {
+            problems.push(format!(
+                "{path} is mode {mode}, not 100755 — git ignores a hook that is not \
+                 executable, and only says so in a hint"
+            ));
+        }
+    }
+
+    (checked, problems)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -160,6 +233,36 @@ mod tests {
         assert!(!is_issue_reference(" later"));
         assert!(!is_issue_reference("(123)"), "the # is required");
         assert!(!is_issue_reference("(#)"), "a number is required");
+    }
+
+    #[test]
+    fn an_executable_hook_passes() {
+        let listing = "100755 a5c40fb 0\t.githooks/commit-msg\n";
+        let (checked, problems) = hook_modes(listing);
+        assert_eq!(checked, 1);
+        assert!(problems.is_empty(), "{problems:?}");
+    }
+
+    #[test]
+    fn a_hook_committed_644_is_reported_with_its_path() {
+        let listing = "100644 a5c40fb 0\t.githooks/commit-msg\n\
+                       100755 b1c2d3e 0\t.githooks/pre-commit\n";
+        let (checked, problems) = hook_modes(listing);
+        assert_eq!(checked, 2);
+        assert_eq!(problems.len(), 1);
+        assert!(problems[0].contains(".githooks/commit-msg"), "{problems:?}");
+        assert!(problems[0].contains("100644"), "{problems:?}");
+    }
+
+    #[test]
+    fn an_empty_hooks_directory_counts_nothing() {
+        assert_eq!(hook_modes("").0, 0);
+    }
+
+    #[test]
+    fn this_repository_ships_its_hooks_executable() {
+        let root = crate::repo_root();
+        check_hooks(&root).expect("every file in .githooks/ must be mode 100755");
     }
 
     #[test]
