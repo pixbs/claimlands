@@ -56,6 +56,15 @@ It pins three values, and which one moved says how bad it is:
 | `ADJACENCY` | the tile graph `lands-core` is given | same, and the rules now play on a different board |
 | `STRUCTURE` | the dual's corner fans as well | only `lands-procgen` renumbers; saved games are fine |
 
+`tests/terrain.rs` pins a second kind of snapshot: a seed to a land mask. A
+level stores a seed rather than a map, so a seed *is* a planet, and a moved
+hash there means every level ever authored is now set on a different world.
+Unlike the three above it is a hash over something derived from coordinates,
+which only holds because every step from the seed to the mask is arithmetic
+IEEE-754 specifies exactly — `sin` is not, so `src/trig.rs` supplies one that
+is. Anything added here that needs a transcendental function needs to go the
+same way rather than reach for `f64::sin`.
+
 `tests/closed_surface.rs` runs `lands-core`'s own closed-surface scenarios on a
 real 642-tile sphere. `lands-core` cannot: depending on this crate would point
 the graph back at itself. If one of those fails, worldgen has produced a planet
