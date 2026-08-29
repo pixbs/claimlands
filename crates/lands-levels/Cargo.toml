@@ -11,3 +11,6 @@ lands-rules = { workspace = true }
 serde = { workspace = true, features = ["std"] }
 ron = { workspace = true }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+lands-testkit = { workspace = true }

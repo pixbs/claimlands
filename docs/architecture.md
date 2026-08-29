@@ -144,15 +144,27 @@ Level(
     overrides: [
         Tile(id: 214, terrain: Land, kind: Capital, owner: Some(Red)),
         Tile(id: 297, terrain: Land, kind: Forest,  owner: None),
+        Tile(id: 401, terrain: Land, kind: Capital, owner: Some(Blue)),
     ],
 )
 ```
+
+Every faction needs a capital override: terrain is procedural, so a faction the
+map never gives a starting tile would be eliminated before its first turn.
+`Level::from_ron` refuses a level without one, along with an override past the
+end of the planet and a player count outside 2..=4.
 
 RON rather than a single compact string because **a one-line encoding is
 unreviewable in a pull request** — with many agents editing levels, an
 invisible one-character diff is a live regression risk. The compact form still
 exists: `lands-cli level export --share` emits base64url of the binary encoding,
 which is what the future player-sharing feature will use.
+
+The planet itself arrives from outside `lands-levels`. `lands-worldgen` grows
+it and sits on the **same layer**, so neither crate may depend on the other;
+the caller passes a `PlanetSource` in. Assembling a world out of a planet and
+growing the planet change for different reasons, and keeping them apart means a
+level can be loaded onto a hand-built topology with no mesh anywhere near it.
 
 ---
 
