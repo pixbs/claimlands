@@ -44,6 +44,19 @@ count, and `V - E + F = 2` catches the rest.
 cargo test -p lands-worldgen
 ```
 
-If `tests/snapshot.rs` fails, the vertex order moved. The question to answer is
+If `tests/snapshot.rs` fails, the numbering moved. The question to answer is
 not what the new hash should be — it is which saved levels and golden replays
 now describe a different planet than the one they were recorded on.
+
+It pins three values, and which one moved says how bad it is:
+
+| Constant | What moved | Cost |
+|---|---|---|
+| `MESH` | the geodesic vertex order | every stored tile id means a different tile |
+| `ADJACENCY` | the tile graph `lands-core` is given | same, and the rules now play on a different board |
+| `STRUCTURE` | the dual's corner fans as well | only `lands-procgen` renumbers; saved games are fine |
+
+`tests/closed_surface.rs` runs `lands-core`'s own closed-surface scenarios on a
+real 642-tile sphere. `lands-core` cannot: depending on this crate would point
+the graph back at itself. If one of those fails, worldgen has produced a planet
+with a seam in it — the rules themselves are not in question.

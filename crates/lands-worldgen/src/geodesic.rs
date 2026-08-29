@@ -35,6 +35,7 @@
 //! every tile in every saved level. [`Geodesic::structure_hash`] exists to
 //! make an accidental change of it fail a test rather than a save file.
 
+use crate::digest::Digest;
 use crate::icosahedron::{Icosahedron, icosahedron};
 use crate::vec3::Vec3;
 use std::collections::BTreeMap;
@@ -130,9 +131,7 @@ impl Geodesic {
     /// *numbering*: tile ids in saved levels and golden replays are indices
     /// into this order. That is integer, and it is what this hashes.
     ///
-    /// FNV-1a, written out by hand for the same reason `lands_core::hash` is:
-    /// a committed snapshot value must not move because a dependency changed
-    /// its mind about how to serialise a struct.
+    /// Taken with [`crate::digest`], which explains the choice of hash.
     pub fn structure_hash(&self) -> u64 {
         let mut d = Digest::new();
         d.u32(self.frequency);
@@ -166,7 +165,7 @@ impl Geodesic {
             }
         }
 
-        d.0
+        d.finish()
     }
 }
 
@@ -295,29 +294,6 @@ fn edge_key(from: u8, to: u8, n: u32, step: u32) -> LatticeKey {
             from: to,
             to: from,
             step: n - step,
-        }
-    }
-}
-
-const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
-const FNV_PRIME: u64 = 0x0000_0100_0000_01b3;
-
-/// Streaming FNV-1a writer, the same one `lands_core::hash` uses.
-struct Digest(u64);
-
-impl Digest {
-    fn new() -> Self {
-        Self(FNV_OFFSET)
-    }
-
-    fn byte(&mut self, b: u8) {
-        self.0 ^= u64::from(b);
-        self.0 = self.0.wrapping_mul(FNV_PRIME);
-    }
-
-    fn u32(&mut self, v: u32) {
-        for b in v.to_le_bytes() {
-            self.byte(b);
         }
     }
 }
