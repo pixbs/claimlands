@@ -1,0 +1,46 @@
+# Auto-label pull requests by the crate they touch, so the board and the
+# path-scoped CI jobs both know what a change is about.
+
+"crate:core":
+  - changed-files:
+      - any-glob-to-any-file: ["crates/civ-core/**", "crates/civ-rules/**"]
+
+"crate:worldgen":
+  - changed-files:
+      - any-glob-to-any-file: "crates/civ-worldgen/**"
+
+"crate:render":
+  - changed-files:
+      - any-glob-to-any-file: ["crates/civ-render/**", "crates/civ-procgen/**"]
+
+"crate:app":
+  - changed-files:
+      - any-glob-to-any-file: ["crates/civ-app/**", "crates/civ-ffi/**"]
+
+"crate:ai":
+  - changed-files:
+      - any-glob-to-any-file: "crates/civ-ai/**"
+
+"crate:levels":
+  - changed-files:
+      - any-glob-to-any-file: ["crates/civ-levels/**", "assets/levels/**", "tools/level-editor/**"]
+
+"platform:mobile":
+  - changed-files:
+      - any-glob-to-any-file: "platforms/**"
+
+"balance":
+  - changed-files:
+      - any-glob-to-any-file: ["assets/rules/**", "assets/ai/**"]
+
+"spec":
+  - changed-files:
+      - any-glob-to-any-file: "spec/**"
+
+"golden-replays":
+  - changed-files:
+      - any-glob-to-any-file: "tests/replays/**"
+
+"tooling":
+  - changed-files:
+      - any-glob-to-any-file: ["xtask/**", ".github/**", ".githooks/**", "tools/civ-cli/**"]

@@ -1,0 +1,18 @@
+/target
+**/*.rs.bk
+*.pdb
+
+# Mobile build artefacts
+/platforms/ios/build
+/platforms/ios/Pods
+/platforms/android/.gradle
+/platforms/android/build
+/platforms/android/app/build
+/platforms/android/local.properties
+/platforms/web/pkg
+
+# Test output (references are committed; actuals are not)
+/tests/visual/actual
+/tests/visual/diff
+
+.DS_Store

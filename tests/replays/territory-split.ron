@@ -1,0 +1,35 @@
+// The design brief's worked example, frozen as a regression test.
+//
+// Red holds a 16-tile strip with 15 wheat and 15 gold. Blue punches through the
+// middle at column 10, cutting it 10 / 5. The pieces must end with 10 and 5 of
+// each resource, and the orphaned half must grow its own capital at its centre.
+//
+// Blue plays first so that Red's treasury is exactly what the fixture sets —
+// Red's income never runs before the capture.
+GoldenReplay(
+    name: "territory-split",
+    description: "A capture that cuts a territory in two divides the treasury in proportion to tile count, and the orphaned half grows its own capital.",
+    rules: ["TERR-030", "TERR-011", "TERR-010"],
+    ruleset_hash: 9775950234494972930,
+    setup: Setup(
+        topology: Grid(16, 2),
+        seed: 7,
+        land: None,
+        players: [
+            PlayerSpec(faction: Blue),
+            PlayerSpec(faction: Red),
+        ],
+        ownership: [
+            (Red, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+            (Blue, [26]),
+        ],
+        capitals: [0, 26],
+        kinds: [],
+        units: [(Blue, Pawn, 26)],
+        treasuries: [(0, 15, 15), (26, 20, 20)],
+    ),
+    commands: [
+        MoveUnit(unit: 0, to: 10),
+    ],
+    expected_state_hash: 13393928626870450576,
+)

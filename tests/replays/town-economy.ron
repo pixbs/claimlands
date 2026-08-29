@@ -1,0 +1,42 @@
+// The design brief's other worked example, plus two rounds of compounding.
+//
+// Three towns with seven wheat feed floor(7/3) = 2 towns, spending 6 wheat and
+// producing 4 gold. The third goes hungry. Red then builds a fourth town and a
+// field, exercising the scaling prices, and plays on so the economy compounds
+// and the towns' wheat draw starts to bite.
+//
+// The board is twelve tiles wide so that Red's six never reach the 70%
+// dominance threshold and end the match early.
+GoldenReplay(
+    name: "town-economy",
+    description: "Towns are fed whole, never in fractions, and build prices scale with what the territory already holds.",
+    rules: ["ECON-004", "ECON-003", "ECON-013", "ECON-014"],
+    ruleset_hash: 9775950234494972930,
+    setup: Setup(
+        topology: Line(12),
+        seed: 11,
+        land: None,
+        players: [
+            PlayerSpec(faction: Red),
+            PlayerSpec(faction: Blue),
+        ],
+        ownership: [
+            (Red, [0, 1, 2, 3, 4, 5]),
+            (Blue, [9, 10, 11]),
+        ],
+        capitals: [0, 10],
+        kinds: [(1, Town), (2, Town), (3, Town)],
+        units: [],
+        // Six stored plus one from the capital gives the seven the brief starts from.
+        treasuries: [(0, 6, 10), (10, 10, 10)],
+    ),
+    commands: [
+        BuildTown(territory: 0, at: 4),
+        BuildField(territory: 0, at: 5),
+        EndTurn,
+        EndTurn,
+        EndTurn,
+        EndTurn,
+    ],
+    expected_state_hash: 10234263221761045280,
+)

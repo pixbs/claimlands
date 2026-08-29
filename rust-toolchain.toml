@@ -1,0 +1,9 @@
+# Pinned deliberately. An agent must never silently build on a different
+# compiler than CI — that is a classic source of "works for me" regressions.
+#
+# `rust-analyzer` is listed so editors use the version matching this toolchain
+# rather than whatever ships with the extension, which is older than the pin
+# and cannot analyse edition 2024 here.
+[toolchain]
+channel = "1.92.0"
+components = ["rustfmt", "clippy", "llvm-tools", "rust-analyzer"]

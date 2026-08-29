@@ -1,0 +1,67 @@
+name: Rule or balance change
+description: Change how the game plays, not how the code is written.
+title: "feat(rules): "
+labels: ["balance", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A rule change invalidates every golden replay at once. That is expected
+        and is why the process is deliberate: re-record them in a commit of
+        their own so a reviewer can see exactly which scenarios moved.
+
+  - type: input
+    id: rules
+    attributes:
+      label: Rule ids
+      description: Which rules change? Use "new" for a rule that does not exist yet.
+      placeholder: ECON-004
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behaviour
+      description: Quote the spec as it stands.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed behaviour
+      description: Write it as spec prose, ready to paste into `spec/rules/`.
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why
+      description: >
+        What does the current rule do badly? If this came from playtesting, say
+        what happened.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of change
+      options:
+        - Data only (a number in assets/rules/default.ron)
+        - Data plus new ruleset fields
+        - New behaviour in civ-core
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: consequences
+    attributes:
+      label: Understood consequences
+      options:
+        - label: Golden replays will need re-recording in a separate commit
+          required: true
+        - label: Saved games recorded against the old balance will refuse to load
+        - label: This resolves an entry in spec/open-questions.md

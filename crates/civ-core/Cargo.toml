@@ -1,0 +1,20 @@
+[package]
+name = "civ-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# civ-core deliberately has almost no dependencies. Its PRNG is hand-rolled
+# (see src/rng.rs) rather than pulled from a crate, because a semver bump in an
+# RNG dependency would silently change every stored replay.
+[dependencies]
+civ-rules = { workspace = true }
+serde = { workspace = true, features = ["std"] }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+civ-testkit = { workspace = true }
+proptest = { workspace = true }
+ron = { workspace = true }

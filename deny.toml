@@ -1,0 +1,34 @@
+# Gate 6. Licences, advisories and banned crates.
+#
+# The *dependency direction* rule (nothing may point back toward civ-core) is
+# not expressible here, so it lives in `cargo xtask check-deps`, which parses
+# `cargo metadata` and is wired into the same CI job.
+
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+
+[licenses]
+version = 2
+allow = ["MIT", "Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Zlib", "CC0-1.0", "MPL-2.0"]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+
+# civ-core must stay deterministic and allocation-predictable. These crates are
+# the usual ways determinism is lost by accident.
+deny = [
+    { name = "rand",       wrappers = [] },   # unseeded thread_rng is a determinism hazard
+    { name = "fastrand" },
+    { name = "instant" },
+    { name = "chrono",     wrappers = [] },   # no wall-clock in a deterministic sim
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

@@ -1,0 +1,36 @@
+// Sacking a capital: the loot moves before the victim splits, the tile is razed
+// to empty ground, and the victim rehouses its capital on what is left.
+//
+// Red's warrior takes Blue's capital at tile 4. Blue holds 40 gold, so Red gains
+// floor(40 * 25 / 100) = 10 and Blue keeps 30. Blue's remaining eight tiles stay
+// connected, so it relocates rather than splitting — and the town, field and
+// forest scattered through them exercise the relocation preference order.
+GoldenReplay(
+    name: "capital-sack",
+    description: "Taking a capital transfers a quarter of the victim's gold, razes the tile, and forces the victim to rehouse its capital.",
+    rules: ["TERR-020", "TERR-011", "UNIT-010b", "UNIT-013"],
+    ruleset_hash: 9775950234494972930,
+    setup: Setup(
+        topology: Grid(4, 3),
+        seed: 3,
+        land: None,
+        players: [
+            PlayerSpec(faction: Red),
+            PlayerSpec(faction: Blue),
+        ],
+        ownership: [
+            (Red, [0, 1, 2, 3]),
+            (Blue, [4, 5, 6, 7, 8, 9, 10, 11]),
+        ],
+        capitals: [0, 4],
+        kinds: [(6, Town), (9, Field), (10, Forest)],
+        units: [(Red, Warrior, 0)],
+        treasuries: [(0, 30, 5), (4, 30, 40)],
+    ),
+    commands: [
+        MoveUnit(unit: 0, to: 4),
+        EndTurn,
+        EndTurn,
+    ],
+    expected_state_hash: 2130186000054852637,
+)

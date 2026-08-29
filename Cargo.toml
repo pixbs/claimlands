@@ -1,0 +1,63 @@
+# Hex Planet — workspace root.
+#
+# The dependency direction between these crates IS the isolation guarantee that
+# lets many agents work in parallel. See docs/architecture.md §3 and deny.toml.
+# No crate may ever add an edge pointing back toward `civ-core`.
+
+[workspace]
+resolver = "3"
+members = [
+    "crates/civ-rules",
+    "crates/civ-core",
+    "crates/civ-worldgen",
+    "crates/civ-ai",
+    "crates/civ-procgen",
+    "crates/civ-render",
+    "crates/civ-levels",
+    "crates/civ-app",
+    "crates/civ-ffi",
+    "crates/civ-testkit",
+    "tools/civ-cli",
+    "tools/level-editor",
+    "platforms/desktop",
+    "xtask",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+license = "UNLICENSED"
+publish = false
+
+[workspace.dependencies]
+civ-rules    = { path = "crates/civ-rules" }
+civ-core     = { path = "crates/civ-core" }
+civ-worldgen = { path = "crates/civ-worldgen" }
+civ-ai       = { path = "crates/civ-ai" }
+civ-procgen  = { path = "crates/civ-procgen" }
+civ-render   = { path = "crates/civ-render" }
+civ-levels   = { path = "crates/civ-levels" }
+civ-app      = { path = "crates/civ-app" }
+civ-testkit  = { path = "crates/civ-testkit" }
+
+serde    = { version = "1", default-features = false, features = ["derive", "alloc", "rc"] }
+ron      = "0.8"
+thiserror = "2"
+clap     = { version = "4", features = ["derive"] }
+proptest = "1"
+
+# Release profile targets mobile: small binary, full optimisation.
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+# Tests must run fast enough that the golden-replay corpus can be enormous.
+[profile.test]
+opt-level = 2
+
+[profile.bench]
+lto = "thin"

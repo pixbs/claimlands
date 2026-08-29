@@ -1,0 +1,107 @@
+// Hex Planet — default ruleset.
+//
+// This file is DATA, not code. Every number the game balances on lives here so
+// that tuning is a reviewable one-line diff with no regression risk.
+//
+// Each field is annotated with the spec rule id it implements. The prose for
+// each id is in spec/rules/. Gate 12 (`cargo xtask spec-coverage`) fails CI if
+// a rule id here has no corresponding test.
+//
+// Changing ANY number in this file changes `Ruleset::hash()`, which invalidates
+// stored replays on purpose — see docs/determinism.md.
+
+(
+    version: 1,
+
+    economy: (
+        // ECON-001. Unconditional per-turn yield of each tile kind.
+        // Town is deliberately absent: its output depends on wheat and is
+        // configured below under `town`. Validation rejects it appearing here.
+        tile_yields: {
+            Empty:   (wheat: 1, gold: 0),   // ECON-001a
+            Capital: (wheat: 1, gold: 1),   // ECON-001b
+            Field:   (wheat: 2, gold: 0),   // ECON-001c
+            Forest:  (wheat: 0, gold: 0),   // ECON-001d
+        },
+
+        // ECON-004. Towns convert wheat into gold, and only WHOLE towns are fed:
+        //   towns_fed = floor(wheat_remaining / wheat_cost)
+        // Worked example from the brief: 3 towns, 7 wheat remaining after units
+        // are fed -> floor(7/3) = 2 towns fed -> 6 wheat spent, 4 gold produced.
+        town: (
+            wheat_cost: 3,
+            gold_yield: 2,
+        ),
+
+        // ECON-020. Treasury of a capital founded at game start.
+        // A capital created by a territory SPLIT instead inherits a
+        // proportional share of its parent's treasury (TERR-030).
+        starting_wheat: 10,
+        starting_gold: 10,
+    ),
+
+    // Every price is `base + per_existing * count`, where `count` is measured
+    // WITHIN THE TERRITORY ONLY -- never across the whole faction.
+    costs: (
+        recruit_pawn:    (base: 1, per_existing: 1),  // ECON-010, counts units of ANY kind
+        upgrade_warrior: (base: 1, per_existing: 1),  // ECON-011, counts warriors + knights only
+        upgrade_knight:  (base: 2, per_existing: 2),  // ECON-012, counts knights only
+        build_town:      (base: 2, per_existing: 1),  // ECON-013, counts towns
+        build_field:     (base: 1, per_existing: 1),  // ECON-014, counts fields
+    ),
+
+    units: (
+        profiles: {
+            // `upkeep` is what the unit CONSUMES per turn (positive = consumed).
+            Pawn: (
+                upkeep: (wheat: 1, gold: 0),                        // UNIT-002a
+                captures: [Empty, Forest, Field],                   // UNIT-010a
+                defeats: [],                                        // UNIT-011a, may not fight
+                upgrades_to: Some(Warrior),                         // UNIT-020a
+            ),
+            Warrior: (
+                upkeep: (wheat: 2, gold: 0),                        // UNIT-002b
+                captures: [Empty, Forest, Field, Town, Capital],    // UNIT-010b
+                defeats: [Pawn],                                    // UNIT-011b
+                upgrades_to: Some(Knight),                          // UNIT-020b
+            ),
+            Knight: (
+                upkeep: (wheat: 2, gold: 1),                        // UNIT-002c
+                captures: [Empty, Forest, Field, Town, Capital],    // UNIT-010c
+                defeats: [Pawn, Warrior, Knight],                   // UNIT-011c
+                upgrades_to: None,                                  // UNIT-020c
+            ),
+        },
+
+        own_territory_steps: 4,  // UNIT-030
+        foreign_steps: 1,        // UNIT-031
+
+        // ECON-005. Who starves first when wheat runs short. Earlier entries
+        // die first; within one kind the OLDEST unit dies first.
+        // The brief specifies knights die at higher priority than warriors, and
+        // warriors before pawns -- i.e. the most expensive units are shed first.
+        starvation_priority: [Knight, Warrior, Pawn],
+    ),
+
+    territory: (
+        // TERR-020. Share of the victim territory's gold the captor gains when
+        // taking a capital. Integer percent, floored.
+        capital_loot_percent: 25,
+
+        // TERR-011. Where a destroyed capital is rehoused, in preference order,
+        // choosing the candidate nearest the territory centroid. If the
+        // territory holds none of these kinds (i.e. only forest), the whole
+        // zone is disbanded and becomes unowned.
+        capital_relocation_preference: [Empty, Town, Field],
+    ),
+
+    growth: (
+        forest_spread_percent: 10,       // GROW-001
+        forest_spread_targets: [Empty],  // GROW-002, never onto Field/Town/Capital
+    ),
+
+    victory: (
+        dominance_threshold_percent: 70,  // VICT-002 -- a judgement call; see spec/rules/victory.md
+        dominance_turns: 1,               // VICT-003
+    ),
+)

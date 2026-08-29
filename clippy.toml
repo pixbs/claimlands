@@ -1,0 +1,2 @@
+# Anything above this is a decision worth naming a constant for.
+too-many-arguments-threshold = 8

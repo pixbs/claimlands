@@ -1,0 +1,23 @@
+# Path -> crate ownership.
+#
+# Combined with .github/labeler.yml this keeps review scoped: a pull request
+# touching only the renderer does not need sign-off from whoever owns the rules.
+#
+# Replace @OWNER with real handles or teams once the repository has them.
+
+*                       @OWNER
+
+# The simulation and its data are the highest-risk surface: a change here can
+# silently alter every saved game.
+/crates/civ-core/       @OWNER
+/crates/civ-rules/      @OWNER
+/assets/rules/          @OWNER
+/spec/                  @OWNER
+/tests/replays/         @OWNER
+
+# The gates themselves. Changing these changes what CI is willing to accept.
+/xtask/                 @OWNER
+/.github/               @OWNER
+/.githooks/             @OWNER
+/deny.toml              @OWNER
+/AGENTS.md              @OWNER

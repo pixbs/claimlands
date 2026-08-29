@@ -1,0 +1,64 @@
+name: Commit hygiene
+
+# The attribution ban, enforced where `--no-verify` cannot reach.
+#
+# The local `.githooks/commit-msg` hook catches this first, but a hook is a
+# convenience the author can skip. This job is required by branch protection,
+# so the merge queue cannot admit a violating commit.
+
+on:
+  pull_request:
+  merge_group:
+
+jobs:
+  attribution:
+    name: no AI attribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The whole PR range must be visible, not just the tip.
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Check every commit in the pull request
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          if [ -z "$base" ]; then
+            base="$(git rev-parse HEAD~1)"
+            head="HEAD"
+          fi
+          cargo xtask check-commits "$base..$head"
+
+  conventional:
+    name: conventional commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check subject lines
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          [ -n "$base" ] || base="$(git rev-parse HEAD~1)"
+          [ -n "$head" ] || head="HEAD"
+
+          pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9./-]+\))?!?: .+'
+          failed=0
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            subject="${line#* }"
+            case "$subject" in
+              Merge*|Revert*) continue ;;
+            esac
+            if ! printf '%s' "$subject" | grep -Eq "$pattern"; then
+              echo "::error::not a Conventional Commit: $line"
+              failed=1
+            fi
+          done < <(git log --format='%h %s' "$base..$head")
+          exit $failed

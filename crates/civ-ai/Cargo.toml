@@ -1,0 +1,11 @@
+[package]
+name = "civ-ai"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+civ-core = { workspace = true }
+civ-rules = { workspace = true }
