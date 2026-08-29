@@ -44,23 +44,62 @@ Types: `feat` `fix` `docs` `style` `refactor` `perf` `test` `build` `ci`
 
 ### No AI attribution
 
-Commit messages, bodies, trailers, co-authors and the author field must **not**
-name an AI assistant — not Claude, not Codex, not Kiwi, not any other. Write
-the commit as the author of the change.
+Nothing that records the authorship of a change may name an AI assistant. That
+means all of:
 
-This is enforced in three places: the local `commit-msg` hook, a CI job that
-scans the whole pull request range, and branch protection requiring that job.
+- the commit message, body, trailers, co-authors and author field
+- the **branch name** — `claude/fix-the-thing` is refused; branches are named
+  `<scope>/<issue>-<slug>`, for the work rather than the tool
+- the **pull request body**, including a "Generated with ..." footer
+
+Write the change as its author.
+
+Enforced in four places against one shared list of names
+(`BANNED_ATTRIBUTION` in `xtask/src/text.rs`): the local `commit-msg` hook,
+`cargo xtask check-commits` over the whole pull request range, `cargo xtask
+check-pr` over the body and branch, and branch protection requiring both jobs.
 `--no-verify` will not get past it.
+
+One consequence worth knowing: the ban is on the string, so a pull request
+body cannot discuss the rule by naming a tool either. Say "an assistant".
 
 ## Pull requests
 
 - One issue per pull request. The issue names the crate; stay in it.
+- **The body must start with `Closes #<issue>`.** See below.
 - Each branch in a stack must pass CI on its own.
 - Fill in the template, especially the behaviour section.
 - If a golden replay hash moved, say which and why. Re-record in a separate
   commit.
 
 See `docs/agent-workflow.md` for worktrees, stacking and the merge queue.
+
+### Closing the issue
+
+GitHub closes an issue on merge only when the pull request **body** carries a
+closing keyword:
+
+```
+Closes #42
+```
+
+The `(#42)` in the commit subject is not enough. It is a link, not an
+instruction, and a pull request that only has that merges green and leaves its
+issue open — which is how #2 and #34 sat closed-in-fact and open-on-GitHub until
+someone noticed.
+
+So **do not use `gh pr create --fill`**: it replaces the body with the commit
+message and discards the template that carries the keyword. Write the body:
+
+```bash
+gh pr create --base master --title "<commit subject>" --body-file <body>
+```
+
+`cargo xtask check-pr` enforces this on every pull request. To try it:
+
+```bash
+PR_BODY='Closes #42' cargo xtask check-pr
+```
 
 ## Adding a game rule
 

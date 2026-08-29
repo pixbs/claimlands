@@ -6,9 +6,15 @@
 //! * `spec-coverage` — gate 12. Every documented rule has a test, and every
 //!   test cites a rule that exists.
 //! * `check-commits` — the attribution ban, enforced over a commit range.
+//! * `check-pr` — a pull request closes its issue, and neither its body nor
+//!   its branch names an AI assistant.
 //! * `check-todos` — no bare `TODO`; every one must name an issue.
 //! * `check-hooks` — every hook in `.githooks/` is committed executable.
 //! * `ci` — all of the above.
+//!
+//! `check-commits` and `check-pr` are not part of `ci`: both describe a
+//! pull request rather than a working tree, so there is nothing for them to
+//! read on a developer's machine. CI runs them from `commit-hygiene.yml`.
 //!
 //! Dependency-free on purpose: this is the tool that guards the dependency
 //! graph, and CI builds it cold on every PR.
@@ -20,6 +26,7 @@ use std::process::ExitCode;
 
 mod brief;
 mod deps;
+mod pr;
 mod spec;
 mod text;
 
@@ -34,6 +41,7 @@ fn main() -> ExitCode {
         "check-todos" => text::check_todos(&root),
         "check-hooks" => text::check_hooks(&root),
         "check-commits" => text::check_commits(args.get(1).map(String::as_str)),
+        "check-pr" => pr::check(),
         "brief" => brief::emit(args.get(1).map(String::as_str)),
         "ci" => run_all(&root),
         "help" | "--help" | "-h" => {
@@ -94,8 +102,14 @@ cargo xtask <command>
   spec-coverage        Verify every spec rule has a test and vice versa (gate 12)
   check-todos          Verify every TODO names an issue
   check-hooks          Verify every hook in .githooks/ is executable
-  check-commits [RANGE]  Verify no AI attribution in commit messages
-  ci                   Run every check above
+  check-commits [RANGE]
+                       Verify no AI attribution in commit messages
+  check-pr             Verify the pull request closes its issue, and that
+                       neither its body nor its branch names an assistant.
+                       Reads $PR_BODY and $PR_BRANCH, never arguments.
+  ci                   Run every gate that reads the working tree. The two
+                       above it describe a pull request instead, so they are
+                       not included; CI runs them from commit-hygiene.yml
 
   brief <ISSUE>        Print a ready-to-paste prompt for an agent to work
                        that issue (needs the `gh` CLI, logged in)

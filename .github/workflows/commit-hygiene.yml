@@ -1,10 +1,11 @@
 name: Commit hygiene
 
-# The attribution ban, enforced where `--no-verify` cannot reach.
+# What a pull request must say about itself, enforced where `--no-verify`
+# cannot reach.
 #
-# The local `.githooks/commit-msg` hook catches this first, but a hook is a
-# convenience the author can skip. This job is required by branch protection,
-# so the merge queue cannot admit a violating commit.
+# The local `.githooks/commit-msg` hook catches the attribution ban first, but a
+# hook is a convenience the author can skip. These jobs are required by branch
+# protection, so the merge queue cannot admit a violating pull request.
 
 on:
   pull_request:
@@ -64,3 +65,30 @@ jobs:
             fi
           done < <(git log --format='%h %s' "$base..$head")
           exit $failed
+
+  pull-request:
+    name: pull request hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The body and branch go in `env:`, never into the `run:` script. A pull
+      # request body is written by whoever opened it, and a branch name is
+      # whatever they pushed; interpolated into a shell, either one containing
+      # `$( )` or a backtick would execute as the runner. As environment
+      # variables they are data, and `check-pr` reads them there.
+      #
+      # The step is skipped in the merge queue, where there is no pull request
+      # to have a body — the job still reports success, so a required check
+      # cannot stall the queue.
+      - name: Check the pull request closes its issue and claims no assistant
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_BRANCH: ${{ github.head_ref }}
+        run: cargo xtask check-pr

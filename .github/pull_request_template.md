@@ -1,6 +1,11 @@
 <!--
   Keep this short. The gates check what can be checked mechanically; this is
   for the things a reviewer has to judge.
+
+  The line below is the one that matters mechanically: fill in the issue
+  number. `Closes #42` is what makes the merge close the issue — a bare `#42`
+  only links it. `cargo xtask check-pr` fails the build if it is missing,
+  and `gh pr create --fill` discards this whole template, so do not use it.
 -->
 
 Closes #

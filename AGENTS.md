@@ -83,6 +83,11 @@ cargo xtask ci
 
 All four must pass. CI runs the same commands plus the mobile builds.
 
+The PR **body** must start with `Closes #<issue>`. The `(#42)` in your commit
+subject links the issue; only the body closes it. Do not use `gh pr create
+--fill` — it overwrites the template that carries the keyword.
+`cargo xtask check-pr` fails the build without it.
+
 ## 7. Commits
 
 Conventional Commits, scope = crate:
@@ -92,14 +97,23 @@ feat(core): territory split conserves the treasury (#42)
 fix(render): stop the cloud shader banding at the poles (#71)
 ```
 
-**Never mention an AI assistant** — not in the message, not in the body, not in
-a trailer, not as a co-author, not in the author field. This is checked by a
-local hook *and* by CI over the whole commit range, so `--no-verify` will not
-get past it. Install the hook once with:
+**Never mention an AI assistant** anywhere the authorship of a change is
+recorded — not in the commit message, body, trailer, co-author or author field,
+not in the **branch name**, and not in the **pull request body**. No "Generated
+with ..." footer.
+
+Three gates enforce it against one shared list of names: the local `commit-msg`
+hook, `cargo xtask check-commits` over the whole pull request range, and
+`cargo xtask check-pr` over the body and branch. `--no-verify` reaches none of
+them. Install the hook once with:
 
 ```bash
 git config core.hooksPath .githooks
 ```
+
+Branches are named for the work, never for the tool:
+`<scope>/<issue>-<slug>`, as in `worldgen/2-goldberg-dual`. A `claude/...` or
+`codex/...` branch is refused.
 
 ## 8. `TODO` must name an issue
 

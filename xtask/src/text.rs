@@ -10,13 +10,18 @@ use crate::{bullets, files_with_extension};
 use std::path::Path;
 use std::process::Command;
 
-/// Tokens that must never appear in a commit message, body, trailer or author
-/// field.
+/// Tokens that must never appear anywhere the authorship of a change is
+/// recorded: a commit message, body, trailer or author field, a branch name, or
+/// a pull request body.
 ///
 /// Enforced here rather than trusted to a prompt, because a prompt is a
 /// request and this is a requirement. The local `commit-msg` hook catches it
 /// first; this catches it again in CI, where `--no-verify` cannot help.
-const BANNED_ATTRIBUTION: &[&str] = &[
+///
+/// Shared with [`crate::pr`], so the name a commit may not carry is the same
+/// name a branch and a pull request body may not carry. One list, or the three
+/// drift apart and the ban has a hole in whichever one was forgotten.
+pub(crate) const BANNED_ATTRIBUTION: &[&str] = &[
     "claude",
     "codex",
     "kiwi",
@@ -30,6 +35,17 @@ const BANNED_ATTRIBUTION: &[&str] = &[
     "generated with",
     "ai-generated",
 ];
+
+/// The first banned token `haystack` names, if it names one.
+///
+/// Case-insensitive, because the ban is on the name and not on its spelling.
+pub(crate) fn attribution_in(haystack: &str) -> Option<&'static str> {
+    let lower = haystack.to_lowercase();
+    BANNED_ATTRIBUTION
+        .iter()
+        .find(|banned| lower.contains(**banned))
+        .copied()
+}
 
 /// Every `TODO` must carry an issue number: `// TODO(#123): ...`.
 pub fn check_todos(root: &Path) -> Result<String, String> {
@@ -127,15 +143,13 @@ pub fn check_commits(range: Option<&str>) -> Result<String, String> {
         let body = parts.next().unwrap_or_default();
         checked += 1;
 
-        let haystack = format!("{author}\n{email}\n{body}").to_lowercase();
-        for banned in BANNED_ATTRIBUTION {
-            if haystack.contains(banned) {
-                problems.push(format!(
-                    "{}: mentions `{banned}` — commit messages and authorship must not \
-                     name an AI assistant (see CONTRIBUTING.md)",
-                    &hash[..hash.len().min(8)]
-                ));
-            }
+        let haystack = format!("{author}\n{email}\n{body}");
+        if let Some(banned) = attribution_in(&haystack) {
+            problems.push(format!(
+                "{}: mentions `{banned}` — commit messages and authorship must not \
+                 name an AI assistant (see CONTRIBUTING.md)",
+                &hash[..hash.len().min(8)]
+            ));
         }
     }
 
