@@ -1,8 +1,8 @@
 # Invariants
 
 Statements that must hold after **every** command. Checked by
-`civ_core::invariants::check`, asserted by the property tests (gate 4) and by
-`civ-cli fuzz`.
+`lands_core::invariants::check`, asserted by the property tests (gate 4) and by
+`lands-cli fuzz`.
 
 If you are adding a rule, ask which of these it could break. If it could break
 one, the property test that covers it is not optional.
@@ -24,7 +24,7 @@ The same starting world and the same command log always produce a
 bit-identical result — on the same machine, on a different run, and on a
 different architecture.
 
-This is what future multiplayer rests on, and it is why `civ-core` denies
+This is what future multiplayer rests on, and it is why `lands-core` denies
 floating-point arithmetic and uses no hash-map iteration.
 
 ## INV-003 — Territories partition ownership

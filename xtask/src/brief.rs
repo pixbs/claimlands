@@ -154,13 +154,13 @@ fn crate_dir(issue: &Issue) -> Option<String> {
         .split(',')
         .find_map(|l| l.trim().strip_prefix("crate:"))
         .map(|c| match c {
-            "core" => "crates/civ-core".to_owned(),
-            "worldgen" => "crates/civ-worldgen".to_owned(),
-            "render" => "crates/civ-render".to_owned(),
-            "app" => "crates/civ-app".to_owned(),
-            "ai" => "crates/civ-ai".to_owned(),
-            "levels" => "crates/civ-levels".to_owned(),
-            other => format!("crates/civ-{other}"),
+            "core" => "crates/lands-core".to_owned(),
+            "worldgen" => "crates/lands-worldgen".to_owned(),
+            "render" => "crates/lands-render".to_owned(),
+            "app" => "crates/lands-app".to_owned(),
+            "ai" => "crates/lands-ai".to_owned(),
+            "levels" => "crates/lands-levels".to_owned(),
+            other => format!("crates/lands-{other}"),
         })
 }
 
@@ -181,9 +181,9 @@ fn render(number: &str, issue: &Issue) -> String {
         ));
     }
     reading.push(
-        "`docs/determinism.md` if you are touching `civ-core`. Non-negotiable\n   \
+        "`docs/determinism.md` if you are touching `lands-core`. Non-negotiable\n   \
          there: no floating point, no `HashMap`/`HashSet`, no clock, and\n   \
-         randomness only via `civ_core::rng::stream`."
+         randomness only via `lands_core::rng::stream`."
             .to_owned(),
     );
     let reading = reading
@@ -337,7 +337,8 @@ mod tests {
 
     #[test]
     fn slugs_are_branch_safe_and_bounded() {
-        let s = slug_of("feat(worldgen): build the Goldberg dual and emit a civ_core::Topology");
+        let s =
+            slug_of("feat(worldgen): build the Goldberg dual and emit the lands_core::Topology");
         assert!(s.len() <= 40, "got {} chars: {s}", s.len());
         assert!(
             s.chars()
@@ -349,13 +350,14 @@ mod tests {
 
     #[test]
     fn slugs_truncate_at_a_word_boundary() {
-        // The old behaviour cut mid-word, giving `...-emit-a-civ-c`.
-        let s = slug_of("feat(worldgen): build the Goldberg dual and emit a civ_core::Topology");
+        // The old behaviour cut mid-word, giving `...-emit-the-lan`.
+        let s =
+            slug_of("feat(worldgen): build the Goldberg dual and emit the lands_core::Topology");
         assert!(
-            !s.ends_with("-c") && !s.ends_with("civ-c"),
+            !s.ends_with("-lan") && !s.ends_with("the-lan"),
             "slug was cut mid-word: {s}"
         );
-        assert_eq!(s, "build-the-goldberg-dual-and-emit-a-civ");
+        assert_eq!(s, "build-the-goldberg-dual-and-emit-the");
     }
 
     #[test]
@@ -381,7 +383,7 @@ mod tests {
     fn maps_a_crate_label_to_its_directory() {
         assert_eq!(
             crate_dir(&issue("x", "crate:core")).as_deref(),
-            Some("crates/civ-core")
+            Some("crates/lands-core")
         );
         assert_eq!(crate_dir(&issue("x", "tooling")), None);
     }

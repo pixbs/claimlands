@@ -3,7 +3,7 @@ name: Mobile builds
 # Gate 9. "It compiles on desktop" is not evidence that it compiles for a
 # phone, and finding out at release time is expensive.
 #
-# `civ-ffi` is built as a staticlib (iOS) and cdylib (Android), which is what
+# `lands-ffi` is built as a staticlib (iOS) and cdylib (Android), which is what
 # the shells actually link — building it as an rlib would prove nothing.
 #
 # Targets are added with `rustup target add` rather than through a toolchain
@@ -21,10 +21,10 @@ on:
   push:
     branches: [master]
     paths:
-      - "crates/civ-ffi/**"
-      - "crates/civ-app/**"
-      - "crates/civ-render/**"
-      - "crates/civ-procgen/**"
+      - "crates/lands-ffi/**"
+      - "crates/lands-app/**"
+      - "crates/lands-render/**"
+      - "crates/lands-procgen/**"
       - "platforms/**"
       - "Cargo.toml"
       - "Cargo.lock"
@@ -32,10 +32,10 @@ on:
       - ".github/workflows/mobile.yml"
   pull_request:
     paths:
-      - "crates/civ-ffi/**"
-      - "crates/civ-app/**"
-      - "crates/civ-render/**"
-      - "crates/civ-procgen/**"
+      - "crates/lands-ffi/**"
+      - "crates/lands-app/**"
+      - "crates/lands-render/**"
+      - "crates/lands-procgen/**"
       - "platforms/**"
       - "Cargo.toml"
       - "Cargo.lock"
@@ -66,8 +66,8 @@ jobs:
         run: rustup target add aarch64-apple-ios aarch64-apple-ios-sim
       - name: Build the static library
         run: |
-          cargo build --release -p civ-ffi --target aarch64-apple-ios
-          cargo build --release -p civ-ffi --target aarch64-apple-ios-sim
+          cargo build --release -p lands-ffi --target aarch64-apple-ios
+          cargo build --release -p lands-ffi --target aarch64-apple-ios-sim
 
   android:
     name: Android (arm64-v8a)
@@ -90,7 +90,7 @@ jobs:
       - name: Build the shared library
         env:
           ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
-        run: cargo ndk -t arm64-v8a -t armeabi-v7a build --release -p civ-ffi
+        run: cargo ndk -t arm64-v8a -t armeabi-v7a build --release -p lands-ffi
 
   web:
     name: WebAssembly (CI visual tests)
@@ -103,4 +103,4 @@ jobs:
       - name: Add the wasm target to the pinned toolchain
         run: rustup target add wasm32-unknown-unknown
       - name: Build for the browser
-        run: cargo build --release -p civ-app --target wasm32-unknown-unknown
+        run: cargo build --release -p lands-app --target wasm32-unknown-unknown

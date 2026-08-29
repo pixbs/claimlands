@@ -11,8 +11,8 @@
 
 # The simulation and its data are the highest-risk surface: a change here can
 # silently alter every saved game.
-/crates/civ-core/       @pixbs
-/crates/civ-rules/      @pixbs
+/crates/lands-core/       @pixbs
+/crates/lands-rules/      @pixbs
 /assets/rules/          @pixbs
 /spec/                  @pixbs
 /tests/replays/         @pixbs

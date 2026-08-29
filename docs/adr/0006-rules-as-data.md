@@ -7,7 +7,7 @@
 Game balance changes constantly and often by people who are not reading the
 code — the base cost of a town, how much of a sacked capital's gold is looted,
 how likely a forest is to spread. If those numbers live as literals in
-`civ-core`, every tuning pass is a code change with the regression risk of one.
+`lands-core`, every tuning pass is a code change with the regression risk of one.
 
 Separately, issues and pull requests need a precise way to refer to a rule.
 "Make territory splitting work" is not checkable; "implement TERR-030" is.

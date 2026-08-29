@@ -1,4 +1,4 @@
-# Hex Planet
+# Claimlands
 
 A turn-based strategy game on a procedurally generated hexagonal planet. Up to
 four factions expand across it, spending wheat and gold, splitting and merging
@@ -21,7 +21,7 @@ Targets iOS and Android from one Rust codebase.
 | M3 Worldgen — the hex sphere in Rust | next |
 | M4 Levels and CLI | |
 | M5 AI | |
-| M6 Renderer — `civ-procgen` + `civ-render` | |
+| M6 Renderer — `lands-procgen` + `lands-render` | |
 | M7 Platform shells | |
 | M8 Game feel — HUD, camera, victory screen | |
 
@@ -39,13 +39,13 @@ cargo test --workspace
 Play a full four-faction match with random agents:
 
 ```bash
-cargo run -p civ-cli -- play --seed 42 --stats
+cargo run -p lands-cli -- play --seed 42 --stats
 ```
 
 Fuzz the invariants:
 
 ```bash
-cargo run --release -p civ-cli -- fuzz --matches 2000
+cargo run --release -p lands-cli -- fuzz --matches 2000
 ```
 
 ## Where to look
@@ -62,7 +62,7 @@ cargo run --release -p civ-cli -- fuzz --matches 2000
 
 ## Design in one paragraph
 
-`civ-core` holds the entire game and knows nothing about rendering, files, time
+`lands-core` holds the entire game and knows nothing about rendering, files, time
 or platforms. Every change to the world goes through a `Command`, which makes
 undo, replay, AI and future multiplayer the same mechanism. Every random draw
 comes from its own stream, so adding a feature cannot invalidate a saved game.

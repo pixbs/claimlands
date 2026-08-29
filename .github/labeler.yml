@@ -3,27 +3,27 @@
 
 "crate:core":
   - changed-files:
-      - any-glob-to-any-file: ["crates/civ-core/**", "crates/civ-rules/**"]
+      - any-glob-to-any-file: ["crates/lands-core/**", "crates/lands-rules/**"]
 
 "crate:worldgen":
   - changed-files:
-      - any-glob-to-any-file: "crates/civ-worldgen/**"
+      - any-glob-to-any-file: "crates/lands-worldgen/**"
 
 "crate:render":
   - changed-files:
-      - any-glob-to-any-file: ["crates/civ-render/**", "crates/civ-procgen/**"]
+      - any-glob-to-any-file: ["crates/lands-render/**", "crates/lands-procgen/**"]
 
 "crate:app":
   - changed-files:
-      - any-glob-to-any-file: ["crates/civ-app/**", "crates/civ-ffi/**"]
+      - any-glob-to-any-file: ["crates/lands-app/**", "crates/lands-ffi/**"]
 
 "crate:ai":
   - changed-files:
-      - any-glob-to-any-file: "crates/civ-ai/**"
+      - any-glob-to-any-file: "crates/lands-ai/**"
 
 "crate:levels":
   - changed-files:
-      - any-glob-to-any-file: ["crates/civ-levels/**", "assets/levels/**", "tools/level-editor/**"]
+      - any-glob-to-any-file: ["crates/lands-levels/**", "assets/levels/**", "tools/level-editor/**"]
 
 "platform:mobile":
   - changed-files:
@@ -43,4 +43,4 @@
 
 "tooling":
   - changed-files:
-      - any-glob-to-any-file: ["xtask/**", ".github/**", ".githooks/**", "tools/civ-cli/**"]
+      - any-glob-to-any-file: ["xtask/**", ".github/**", ".githooks/**", "tools/lands-cli/**"]

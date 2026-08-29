@@ -14,15 +14,15 @@ body:
     attributes:
       label: Crate
       options:
-        - civ-rules
-        - civ-core
-        - civ-worldgen
-        - civ-ai
-        - civ-procgen
-        - civ-render
-        - civ-levels
-        - civ-app
-        - civ-ffi
+        - lands-rules
+        - lands-core
+        - lands-worldgen
+        - lands-ai
+        - lands-procgen
+        - lands-render
+        - lands-levels
+        - lands-app
+        - lands-ffi
         - platforms
         - tools
         - unknown
@@ -52,7 +52,7 @@ body:
         A seed, a command log, or a failing golden replay. If you have a seed
         from the fuzzer, paste the command that found it.
       placeholder: |
-        cargo run -p civ-cli -- fuzz --matches 5000
+        cargo run -p lands-cli -- fuzz --matches 5000
         # fails at seed 1183, step 204
       render: shell
 

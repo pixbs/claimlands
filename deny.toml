@@ -1,6 +1,6 @@
 # Gate 6. Licences, advisories and banned crates.
 #
-# The *dependency direction* rule (nothing may point back toward civ-core) is
+# The *dependency direction* rule (nothing may point back toward lands-core) is
 # not expressible here, so it lives in `cargo xtask check-deps`, which parses
 # `cargo metadata` and is wired into the same CI job.
 
@@ -37,14 +37,14 @@ multiple-versions = "warn"
 wildcards = "deny"
 allow-wildcard-paths = true
 
-# civ-core must stay deterministic. These crates are the usual ways that gets
+# lands-core must stay deterministic. These crates are the usual ways that gets
 # lost by accident — an unseeded `thread_rng`, or a wall clock read somewhere in
 # a turn resolution.
 #
 # `wrappers` lists the only crates permitted to pull a banned crate in. proptest
 # needs `rand` to generate cases and is a dev-dependency, so it never reaches a
 # device; anything else reaching for `rand` is a bug, because simulation
-# randomness must come from `civ_core::rng::stream` (see docs/determinism.md).
+# randomness must come from `lands_core::rng::stream` (see docs/determinism.md).
 deny = [
     { name = "rand", wrappers = ["proptest"] },
     # fastrand arrives as fastrand <- tempfile <- proptest, so `tempfile` is the

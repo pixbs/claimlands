@@ -1,23 +1,23 @@
-# Hex Planet — workspace root.
+# Claimlands — workspace root.
 #
 # The dependency direction between these crates IS the isolation guarantee that
 # lets many agents work in parallel. See docs/architecture.md §3 and deny.toml.
-# No crate may ever add an edge pointing back toward `civ-core`.
+# No crate may ever add an edge pointing back toward `lands-core`.
 
 [workspace]
 resolver = "3"
 members = [
-    "crates/civ-rules",
-    "crates/civ-core",
-    "crates/civ-worldgen",
-    "crates/civ-ai",
-    "crates/civ-procgen",
-    "crates/civ-render",
-    "crates/civ-levels",
-    "crates/civ-app",
-    "crates/civ-ffi",
-    "crates/civ-testkit",
-    "tools/civ-cli",
+    "crates/lands-rules",
+    "crates/lands-core",
+    "crates/lands-worldgen",
+    "crates/lands-ai",
+    "crates/lands-procgen",
+    "crates/lands-render",
+    "crates/lands-levels",
+    "crates/lands-app",
+    "crates/lands-ffi",
+    "crates/lands-testkit",
+    "tools/lands-cli",
     "tools/level-editor",
     "platforms/desktop",
     "xtask",
@@ -33,15 +33,15 @@ rust-version = "1.92"
 publish = false
 
 [workspace.dependencies]
-civ-rules    = { path = "crates/civ-rules" }
-civ-core     = { path = "crates/civ-core" }
-civ-worldgen = { path = "crates/civ-worldgen" }
-civ-ai       = { path = "crates/civ-ai" }
-civ-procgen  = { path = "crates/civ-procgen" }
-civ-render   = { path = "crates/civ-render" }
-civ-levels   = { path = "crates/civ-levels" }
-civ-app      = { path = "crates/civ-app" }
-civ-testkit  = { path = "crates/civ-testkit" }
+lands-rules    = { path = "crates/lands-rules" }
+lands-core     = { path = "crates/lands-core" }
+lands-worldgen = { path = "crates/lands-worldgen" }
+lands-ai       = { path = "crates/lands-ai" }
+lands-procgen  = { path = "crates/lands-procgen" }
+lands-render   = { path = "crates/lands-render" }
+lands-levels   = { path = "crates/lands-levels" }
+lands-app      = { path = "crates/lands-app" }
+lands-testkit  = { path = "crates/lands-testkit" }
 
 serde    = { version = "1", default-features = false, features = ["derive", "alloc", "rc"] }
 ron      = "0.8"

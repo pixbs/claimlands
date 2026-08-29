@@ -7,8 +7,8 @@ How several agents share this repository without treading on each other.
 No shared checkouts. Each agent gets its own working copy:
 
 ```bash
-git worktree add ../hex-planet-42 -b core/42-territory-split
-cd ../hex-planet-42
+git worktree add ../claimlands-42 -b core/42-territory-split
+cd ../claimlands-42
 git config core.hooksPath .githooks
 ```
 
@@ -162,7 +162,7 @@ This is the moment that matters most, so it is worth being explicit.
 A hash moving means **behaviour changed**. There are exactly two cases:
 
 - **You meant it.** Re-record with
-  `cargo run -p civ-cli -- golden record <file>`, in a commit of its own, and
+  `cargo run -p lands-cli -- golden record <file>`, in a commit of its own, and
   list in the pull request which scenarios moved and why. A reviewer should be
   able to check that the list matches the intent.
 

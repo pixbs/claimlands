@@ -1,0 +1,9 @@
+[package]
+name = "lands-procgen"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+lands-worldgen = { workspace = true }

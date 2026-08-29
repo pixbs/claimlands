@@ -4,7 +4,7 @@ A **territory** is a connected component of tiles owned by one faction. It is
 the central entity of the game: treasury, capital and every build price belong
 to a territory, not to a player. One faction may hold several at once.
 
-These are the subtlest rules in the game. Read `crates/civ-core/src/territory.rs`
+These are the subtlest rules in the game. Read `crates/lands-core/src/territory.rs`
 alongside this file before changing anything here.
 
 ---

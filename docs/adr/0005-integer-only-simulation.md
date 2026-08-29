@@ -16,7 +16,7 @@ disagree about who owns a tile.
 
 ## Decision
 
-`#![deny(clippy::float_arithmetic)]` in `civ-core` and `civ-rules`.
+`#![deny(clippy::float_arithmetic)]` in `lands-core` and `lands-rules`.
 
 Resources are `i32`. Percentages are integer comparisons:
 
@@ -40,5 +40,5 @@ naturally whole.
 - Rounding must be decided explicitly at each site rather than falling out of
   the arithmetic. That is a feature: the town-feeding rule (ECON-004) rounds
   *down* and it matters, so it is written down and tested.
-- Rendering, which is downstream of `civ-core`, uses floats freely. The lint is
+- Rendering, which is downstream of `lands-core`, uses floats freely. The lint is
   scoped to the crates where determinism is a requirement.

@@ -26,7 +26,7 @@ is knowable and small.**
 
 ### A pure simulation core
 
-`civ-core` contains the entire game and knows nothing about rendering, files,
+`lands-core` contains the entire game and knows nothing about rendering, files,
 time, threads or platforms. It cannot import anything downstream, and that is
 enforced mechanically rather than by convention (`cargo xtask check-deps`).
 
@@ -43,7 +43,7 @@ One pattern satisfies five separate requirements:
 | Undo | Restore the turn-start snapshot, replay all but the last command |
 | Replay | A save file *is* `(ruleset_hash, level, Vec<Command>)` |
 | AI | A brain emits the same `Command` a human does, so it cannot cheat |
-| Multiplayer (later) | Ship `Command` over a transport; `civ-core` does not change |
+| Multiplayer (later) | Ship `Command` over a transport; `lands-core` does not change |
 | Regression testing | A command log plus an expected state hash is the golden test format |
 
 Validation is separate from application: `validate` never mutates, so the HUD
@@ -68,35 +68,35 @@ literally true rather than aspirational.
 **The dependency direction is the isolation guarantee.**
 
 ```
-civ-rules ──┐
-            ├─→ civ-core ──┬─→ civ-worldgen ──→ civ-procgen ──→ civ-render ──┐
-            │              ├─→ civ-ai                                        ├─→ civ-app ──→ civ-ffi ──→ platforms/
-            │              └─→ civ-levels ────────────────────────────────────┘
-civ-testkit ──→ (dev-dependency of everything)
+lands-rules ──┐
+              ├─→ lands-core ──┬─→ lands-worldgen ──→ lands-procgen ──→ lands-render ──┐
+              │                ├─→ lands-ai                                            ├─→ lands-app ──→ lands-ffi ──→ platforms/
+              │                └─→ lands-levels ───────────────────────────────────────┘
+lands-testkit ──→ (dev-dependency of everything)
 ```
 
 | Crate | Layer | Owns | Must not contain |
 |---|---|---|---|
-| `civ-rules` | 0 | `Ruleset` types, RON loading, validation, `ruleset_hash()` | Any game logic |
-| `civ-core` | 1 | World, Territory, Unit, turn pipeline, commands, events, invariants | Floats, I/O, rendering, time, hash iteration |
-| `civ-worldgen` | 2 | Hex sphere topology, terrain, cover seeding | Rendering types |
-| `civ-ai` | 2 | `Brain` trait, difficulty profiles | Mutating `World` directly |
-| `civ-levels` | 2 | Level format, share codes, campaign | Rendering |
-| `civ-procgen` | 3 | CPU mesh and texture builders → plain buffers | Any `wgpu` type |
-| `civ-render` | 4 | wgpu device, pipelines, the low-res pixel-art pass | Game rules |
-| `civ-app` | 5 | State machine, input, camera, HUD, `Event` → visual | Game rules |
-| `civ-ffi` | 6 | `extern "C"` surface for the shells | Logic of any kind |
-| `civ-testkit` | — | Fixtures, golden harness, topologies | Production code |
+| `lands-rules` | 0 | `Ruleset` types, RON loading, validation, `ruleset_hash()` | Any game logic |
+| `lands-core` | 1 | World, Territory, Unit, turn pipeline, commands, events, invariants | Floats, I/O, rendering, time, hash iteration |
+| `lands-worldgen` | 2 | Hex sphere topology, terrain, cover seeding | Rendering types |
+| `lands-ai` | 2 | `Brain` trait, difficulty profiles | Mutating `World` directly |
+| `lands-levels` | 2 | Level format, share codes, campaign | Rendering |
+| `lands-procgen` | 3 | CPU mesh and texture builders → plain buffers | Any `wgpu` type |
+| `lands-render` | 4 | wgpu device, pipelines, the low-res pixel-art pass | Game rules |
+| `lands-app` | 5 | State machine, input, camera, HUD, `Event` → visual | Game rules |
+| `lands-ffi` | 6 | `extern "C"` surface for the shells | Logic of any kind |
+| `lands-testkit` | — | Fixtures, golden harness, topologies | Production code |
 
 A crate may depend only on **strictly lower** layers. `cargo xtask check-deps`
 enforces it; the table lives in `xtask/src/deps.rs`.
 
 Two constraints are worth their own sentence:
 
-- **`civ-procgen` may not touch `wgpu`.** That makes every mesh builder a pure
+- **`lands-procgen` may not touch `wgpu`.** That makes every mesh builder a pure
   function testable by vertex count and bounding box, with no GPU in CI.
-- **`civ-testkit` may not be a normal dependency of shipped code.** Dev tools
-  (`civ-cli`, `level-editor`) are exempt because they never reach a device.
+- **`lands-testkit` may not be a normal dependency of shipped code.** Dev tools
+  (`lands-cli`, `level-editor`) are exempt because they never reach a device.
 
 ---
 
@@ -107,7 +107,7 @@ spec/           SOURCE OF TRUTH FOR GAME RULES. Prose with stable ids.
 docs/           Architecture, determinism, agent workflow, ADRs.
 crates/         The crate graph above.
 platforms/      iOS shell, Android shell, desktop dev harness, wasm for CI.
-tools/          civ-cli (headless), level-editor.
+tools/          lands-cli (headless), level-editor.
 xtask/          The quality gates cargo cannot express.
 assets/rules/   Every balance number. Data, not code.
 assets/visual/  Every palette and tunable from the prototype.
@@ -151,7 +151,7 @@ Level(
 RON rather than a single compact string because **a one-line encoding is
 unreviewable in a pull request** — with many agents editing levels, an
 invisible one-character diff is a live regression risk. The compact form still
-exists: `civ-cli level export --share` emits base64url of the binary encoding,
+exists: `lands-cli level export --share` emits base64url of the binary encoding,
 which is what the future player-sharing feature will use.
 
 ---
@@ -173,7 +173,7 @@ Worked examples of what this means for the roadmap:
 
 - **Science tree** — a new turn phase, new `Ruleset` fields, new commands. No
   existing phase changes.
-- **Multiplayer** — a transport that ships `Command`. `civ-core` does not
+- **Multiplayer** — a transport that ships `Command`. `lands-core` does not
   change at all.
-- **Player-facing level editor** — a UI over the format `civ-levels` already
+- **Player-facing level editor** — a UI over the format `lands-levels` already
   defines.

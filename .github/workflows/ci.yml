@@ -62,11 +62,11 @@ jobs:
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
       - name: Verify golden replays
-        run: cargo run --release -p civ-cli -- golden verify
+        run: cargo run --release -p lands-cli -- golden verify
       - name: Fuzz the invariants
         # Alternates bounded and wrapping arenas by seed parity, so a closed
         # surface is covered without the workflow having to know.
-        run: cargo run --release -p civ-cli -- fuzz --matches 300 --steps 400
+        run: cargo run --release -p lands-cli -- fuzz --matches 300 --steps 400
 
   # Gates 6 and 12, plus TODO hygiene.
   repo-rules:
@@ -87,9 +87,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: EmbarkStudios/cargo-deny-action@v2
 
-  # Gate 10: civ-core carries the whole game, so its coverage floor is high.
+  # Gate 10: lands-core carries the whole game, so its coverage floor is high.
   coverage:
-    name: civ-core coverage
+    name: lands-core coverage
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,4 +100,4 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cargo-llvm-cov
       - name: Measure
-        run: cargo llvm-cov -p civ-core --all-features --fail-under-lines 85
+        run: cargo llvm-cov -p lands-core --all-features --fail-under-lines 85

@@ -1,9 +1,9 @@
 [package]
-name = "civ-desktop"
+name = "lands-desktop"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
 [dependencies]
-civ-app = { workspace = true }
+lands-app = { workspace = true }
