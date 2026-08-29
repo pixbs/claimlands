@@ -3,21 +3,23 @@
 # Combined with .github/labeler.yml this keeps review scoped: a pull request
 # touching only the renderer does not need sign-off from whoever owns the rules.
 #
-# Replace @OWNER with real handles or teams once the repository has them.
+# GitHub silently drops a rule whose owner it cannot resolve, so every handle
+# here must be a real account with write access to this repository. Add teams
+# in place of the handle once the repository lives under an organisation.
 
-*                       @OWNER
+*                       @pixbs
 
 # The simulation and its data are the highest-risk surface: a change here can
 # silently alter every saved game.
-/crates/civ-core/       @OWNER
-/crates/civ-rules/      @OWNER
-/assets/rules/          @OWNER
-/spec/                  @OWNER
-/tests/replays/         @OWNER
+/crates/civ-core/       @pixbs
+/crates/civ-rules/      @pixbs
+/assets/rules/          @pixbs
+/spec/                  @pixbs
+/tests/replays/         @pixbs
 
 # The gates themselves. Changing these changes what CI is willing to accept.
-/xtask/                 @OWNER
-/.github/               @OWNER
-/.githooks/             @OWNER
-/deny.toml              @OWNER
-/AGENTS.md              @OWNER
+/xtask/                 @pixbs
+/.github/               @pixbs
+/.githooks/             @pixbs
+/deny.toml              @pixbs
+/AGENTS.md              @pixbs
