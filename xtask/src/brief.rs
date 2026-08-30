@@ -249,6 +249,20 @@ Do not restate those rules back to me — just follow them.
 
 {body}
 
+## Show your work in the preview
+
+If this issue produces anything spatial or graphical, it must be visible in the
+WebGPU preview — your own file under `crates/lands-app/src/debug/` plus one
+appended line in the registry. One file per feature, so several agents can add
+panels at once without touching each other's work.
+
+Tests prove the numbers are right, not that the planet is right. Cover scattered
+evenly and cover properly clumped produce identical share statistics, and only
+one of them is correct.
+
+Work with no spatial or graphical output — a trait, a file format, CI, tooling —
+is exempt. Do not invent a contrived panel to satisfy this.
+
 ## Done means all four of these pass
 
     cargo fmt --all

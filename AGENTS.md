@@ -72,7 +72,25 @@ your change moves a hash, it changed behaviour.
   say in the PR why each scenario moved.
 - If it was **not** intended, you have found your regression. Do not re-record.
 
-## 6. Before you open a PR
+## 6. Show your work in the preview
+
+If your change produces anything spatial or graphical, it must be **visible in
+the WebGPU preview**, as its own file under `crates/lands-app/src/debug/` plus
+one appended line in the registry. One file per feature: that is what lets many
+agents add panels at once without touching each other's work.
+
+A reviewer opens the preview URL commented on your pull request and looks.
+
+This exists because tests prove the numbers are right, not that the planet is
+right. Cover scattered evenly and cover properly clumped produce *identical*
+share statistics. Continents banded around the equator satisfy every assertion
+about a land-fraction quantile. Those are five-second observations and
+unbounded debugging sessions, depending on whether anyone can see them.
+
+Work with no spatial or graphical output — a trait, a file format, CI, tooling
+— is exempt. Do not invent a contrived panel to satisfy this.
+
+## 7. Before you open a PR
 
 ```bash
 cargo fmt --all
@@ -88,7 +106,7 @@ subject links the issue; only the body closes it. Do not use `gh pr create
 --fill` — it overwrites the template that carries the keyword.
 `cargo xtask check-pr` fails the build without it.
 
-## 7. Commits
+## 8. Commits
 
 Conventional Commits, scope = crate:
 
@@ -115,7 +133,7 @@ Branches are named for the work, never for the tool:
 `<scope>/<issue>-<slug>`, as in `worldgen/2-goldberg-dual`. A `claude/...` or
 `codex/...` branch is refused.
 
-## 8. `TODO` must name an issue
+## 9. `TODO` must name an issue
 
 `// TODO(#123): ...`, never a bare `TODO`. Enforced by `cargo xtask check-todos`.
 

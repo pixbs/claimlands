@@ -86,6 +86,33 @@ body:
     validations:
       required: true
 
+  - type: textarea
+    id: preview
+    attributes:
+      label: What you can see in the preview
+      description: >
+        What will a reviewer be able to look at once this lands? Every issue
+        that produces something spatial or graphical must surface it in the
+        WebGPU preview as its own debug panel file — see the registry pattern
+        in the app crate. A reviewer opens the per-pull-request preview URL and
+        looks.
+
+
+        Tests prove the numbers are right. They do not prove the planet is
+        right: cover scattered evenly and cover properly clumped produce
+        identical share statistics, and only one of them is correct.
+
+
+        Write "not applicable" for work with no spatial or graphical output —
+        a trait definition, a file format, CI or tooling. Do not invent a
+        contrived panel for those.
+      placeholder: |
+        A terrain layer colouring land against sea, with the achieved land
+        fraction as a readout. Catches continents banding around the equator,
+        which no assertion about a quantile would notice.
+    validations:
+      required: true
+
   - type: checkboxes
     id: risk
     attributes:

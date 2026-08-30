@@ -18,12 +18,19 @@ Targets iOS and Android from one Rust codebase.
 | M0 Foundation — workspace, gates, docs | **done** |
 | M1 Spec — rules with stable ids | **done** |
 | M2 Simulation core | **done** |
-| M3 Worldgen — the hex sphere in Rust | next |
-| M4 Levels and CLI | |
+| M3 Worldgen — the hex sphere in Rust | in progress |
+| M3.5 Preview — WebGPU planet viewer, deployed per PR | **next** |
+| M4 Levels and CLI | in progress |
 | M5 AI | |
 | M6 Renderer — `lands-procgen` + `lands-render` | |
 | M7 Platform shells | |
 | M8 Game feel — HUD, camera, victory screen | |
+
+**M3.5 is the one that matters most**, and it is not about graphics. Until it
+lands, a pull request can only be checked by reading its tests — and tests prove
+the numbers are right, not that the planet is right. Cover scattered evenly and
+cover properly clumped produce identical share statistics. See
+[ADR 0007](docs/adr/0007-preview-as-verification-surface.md).
 
 The simulation is complete and tested: territories split and merge, capitals
 relocate and fall, units starve, forests spread, matches are won. It runs
