@@ -266,8 +266,9 @@ fn the_shares_are_within_a_tile_of_the_configured_fractions() {
             let map = cover(&planet, &land, seed, &CoverRules::bundled());
 
             for (kind, percent) in Cover::ALL.iter().zip(configured_shares()) {
-                // `count * 200` against `land * percent * 2` compares halves of
-                // a tile without leaving the integers.
+                // Both sides scaled by a hundred, and the difference doubled,
+                // so "within half a tile" is checked without leaving the
+                // integers: |count - land * percent / 100| <= 1/2.
                 let wanted = land.land_count() * percent;
                 let got = map.count(*kind) * 100;
                 assert!(
@@ -437,6 +438,17 @@ fn the_shares_follow_the_data() {
         tiles_of(&map, Cover::Village),
         tiles_of(&bundled, Cover::Village)
     );
+}
+
+#[test]
+#[should_panic(expected = "the terrain describes a different planet")]
+fn a_terrain_from_another_planet_is_refused() {
+    // Cover reads the terrain to decide what is land, so a mismatched pair
+    // would index one planet's tiles with another's ids: silently wrong cover
+    // rather than a crash, on a map nothing downstream can check.
+    let planet = goldberg(FREQUENCY);
+    let elsewhere = terrain(&goldberg(FREQUENCY - 2), 1);
+    let _ = cover(&planet, &elsewhere, 1, &CoverRules::bundled());
 }
 
 #[test]
