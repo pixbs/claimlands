@@ -65,6 +65,18 @@ IEEE-754 specifies exactly — `sin` is not, so `src/trig.rs` supplies one that
 is. Anything added here that needs a transcendental function needs to go the
 same way rather than reach for `f64::sin`.
 
+`tests/cover.rs` pins a third: a seed to a cover layout. It fails for the same
+reason `tests/terrain.rs` does — a level stores a seed, so a moved hash means
+every level authored on that seed now starts with its villages, woods and
+farmland somewhere else. Unlike the terrain it is hashed over something purely
+combinatorial, because cover is grown over the tile graph and the pass contains
+no floating-point arithmetic at all. Keep it that way: anything added there that
+reaches for a float is reaching for a coordinate, and cover decides a
+`TileKind` the simulation plays on.
+
+The shares it seeds with are data, in `assets/worldgen/cover.ron`, and that file
+says why they are not in `assets/rules/default.ron`.
+
 `tests/closed_surface.rs` runs `lands-core`'s own closed-surface scenarios on a
 real 642-tile sphere. `lands-core` cannot: depending on this crate would point
 the graph back at itself. If one of those fails, worldgen has produced a planet

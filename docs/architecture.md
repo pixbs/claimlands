@@ -109,7 +109,8 @@ crates/         The crate graph above.
 platforms/      iOS shell, Android shell, desktop dev harness, wasm for CI.
 tools/          lands-cli (headless), level-editor.
 xtask/          The quality gates cargo cannot express.
-assets/rules/   Every balance number. Data, not code.
+assets/rules/   Every balance number the simulation plays on. Data, not code.
+assets/worldgen/ The generator's own tunables — cover shares and the like.
 assets/visual/  Every palette and tunable from the prototype.
 tests/replays/  The golden regression corpus.
 reference/      The original Three.js prototype — the visual oracle.
@@ -120,6 +121,12 @@ Two directories deserve emphasis.
 **`assets/rules/default.ron`** holds every number the game balances on. A
 balance change is then a data diff any reviewer can read at a glance, and
 alternate rulesets (tutorial, hardcore, a future science-tree variant) are free.
+
+Numbers the *generator* balances on live beside it in `assets/worldgen/` rather
+than inside it, because everything in `default.ron` is fingerprinted by
+`Ruleset::hash()` and recorded in every golden replay. Tuning how much of a
+planet starts out as farmland cannot change how a turn resolves, and should not
+invalidate the replay corpus to say so.
 
 **`spec/` is the source of truth for rules; GitHub Issues are the source of
 truth for work.** Keeping them separate is what stops rule discussions from

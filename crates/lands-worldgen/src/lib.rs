@@ -8,9 +8,9 @@
 //! the rest hexagons.
 //!
 //! [`icosahedron`] and [`geodesic`] build the triangle mesh; [`goldberg`]
-//! turns it inside out into the tiles the game is played on, and [`terrain`]
-//! decides which of those tiles are land. Cover comes later and sits on top of
-//! that.
+//! turns it inside out into the tiles the game is played on, [`terrain`]
+//! decides which of those tiles are land, and [`cover`] grows villages, woods
+//! and farmland in clumps on top of it.
 //!
 //! # What this crate owes the rest of the game
 //!
@@ -34,7 +34,9 @@
 //! [`terrain`] is the one place that turns geometry into something the rules
 //! do read, since land and water decide where a unit may stand. It stays
 //! reproducible by using only arithmetic IEEE-754 specifies exactly — which
-//! `sin` is not, so the crate brings its own (`trig`).
+//! `sin` is not, so the crate brings its own (`trig`). [`cover`] reads the same
+//! rules but never a coordinate: it works over the tile graph, so it is written
+//! in integers throughout and needs no such argument.
 
 #![forbid(unsafe_code)]
 #![warn(missing_debug_implementations)]
@@ -42,12 +44,16 @@
 mod digest;
 mod trig;
 
+pub mod cover;
 pub mod geodesic;
 pub mod goldberg;
 pub mod icosahedron;
 pub mod terrain;
 pub mod vec3;
 
+pub use cover::{
+    Cover, CoverKindRules, CoverMap, CoverRules, CoverRulesError, DEFAULT_COVER_RON, cover,
+};
 pub use geodesic::{Geodesic, LatticeKey, geodesic, triangle_count, vertex_count};
 pub use goldberg::{Cell, Goldberg, dual, goldberg};
 pub use icosahedron::{Icosahedron, icosahedron};
