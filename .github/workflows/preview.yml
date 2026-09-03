@@ -37,7 +37,7 @@ jobs:
     name: preview build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Once the harness lands (#44) this is where the wasm bundle is built and
       # copied into platforms/web/public. Until then the directory holds a
@@ -73,7 +73,7 @@ jobs:
           fi
           echo "Worker configuration is valid (compatibility_date $date, preview_urls on)."
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: preview-bundle
           path: platforms/web/public
@@ -87,7 +87,7 @@ jobs:
     # to deploy with. Skip rather than fail: `build` above is what gates merge.
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check the Cloudflare secrets are present
         env:
@@ -103,7 +103,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
 
@@ -122,17 +122,20 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
 
-          # A version can only be uploaded against a Worker that already exists,
-          # and the Worker is created by the first deploy from master. So on a
-          # brand-new Cloudflare account the first pull request has nothing to
-          # upload against — through no fault of its author.
+          # A version can only be uploaded against a Worker that already exists.
+          # On a fresh Cloudflare account nothing has created it yet, so without
+          # this the first pull request could never show a preview — and a
+          # preview pipeline that needs a merge before it can preview anything
+          # is not much of a pipeline.
           #
-          # Say so and pass, rather than failing a check nobody can act on. It
-          # resolves itself the moment anything merges.
+          # Create it once, then upload a version as normal. This is the only
+          # path on which a pull request touches the production Worker, and it
+          # runs exactly once in the lifetime of the account.
           if grep -q "does not yet exist" upload.log; then
-            echo "bootstrap=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::The Worker does not exist yet; it is created by the first deploy from master."
-            exit 0
+            echo "::warning::The Worker does not exist yet. Creating it with a one-time deploy so this pull request can have a preview."
+            npx --yes wrangler@4 deploy
+            npx --yes wrangler@4 versions upload 2>&1 | tee upload.log
+            status=0
           fi
 
           if [ "$status" -ne 0 ]; then
@@ -154,7 +157,7 @@ jobs:
 
       - name: Comment the preview URL
         if: github.event_name == 'pull_request' && steps.preview.outputs.url != ''
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           # One comment, updated in place, rather than a new one per push.
           header: preview
@@ -167,23 +170,6 @@ jobs:
 
             Needs a browser with WebGPU — desktop Chrome or Edge. The page reports
             whether yours has it.
-
-      - name: Explain that the Worker is not created yet
-        if: github.event_name == 'pull_request' && steps.preview.outputs.bootstrap == 'true'
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: preview
-          message: |
-            ### Preview
-
-            Not available for this pull request: the `claimlands` Worker does not
-            exist on Cloudflare yet.
-
-            A version can only be uploaded against an existing Worker, and the
-            Worker is created by the first deploy from `master`. Once anything
-            merges, every pull request after it gets a preview link here.
-
-            Nothing to fix in this branch.
 
       - name: Deploy to production
         if: github.event_name != 'pull_request'
