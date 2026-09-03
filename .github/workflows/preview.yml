@@ -67,9 +67,11 @@ jobs:
             echo "::error::platforms/web/public/index.html is missing — there is nothing to deploy."
             exit 1
           fi
-          # A cover page with no planet beside it deploys cleanly and shows a
-          # load error, which reads as a broken renderer rather than a missing
-          # build step. Fail here instead.
+          # A cover page with no planet beside it deploys cleanly and fails in
+          # the browser, which reads as a broken renderer rather than a missing
+          # file. This catches the export step not running; the deploy job
+          # checks the same thing again after the artifact hand-off, which is
+          # the other half and the one that actually reaches a viewer.
           if [ ! -s platforms/web/public/planet.json ]; then
             echo "::error::platforms/web/public/planet.json is missing or empty — the export step did not run."
             exit 1
@@ -113,7 +115,33 @@ jobs:
     # to deploy with. Skip rather than fail: `build` above is what gates merge.
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
     steps:
+      # The checkout is for `wrangler.jsonc`. The *bundle* comes from the build
+      # job below, and the difference matters: anything the build generates is
+      # gitignored, so a checkout alone carries the pages and none of the data
+      # they draw.
       - uses: actions/checkout@v7
+
+      # Deploy the bytes the build job assembled and checked, not a second
+      # assembly of them that nothing verified. Without this the pages ship
+      # without their planet, `not_found_handling` serves index.html for the
+      # missing file, and the page fails on `JSON.parse` — a green pipeline
+      # and a broken preview, which is the worst of both.
+      - uses: actions/download-artifact@v7
+        with:
+          name: preview-bundle
+          path: platforms/web/public
+
+      - name: Check the bundle survived the hand-off
+        run: |
+          echo "Deploying:"
+          ls -la platforms/web/public
+          for file in index.html cover.html planet.json; do
+            if [ ! -s "platforms/web/public/$file" ]; then
+              echo "::error::platforms/web/public/$file is missing from the build artifact."
+              echo "::error::Deploying now would serve a page whose data 404s into index.html."
+              exit 1
+            fi
+          done
 
       - name: Check the Cloudflare secrets are present
         env:

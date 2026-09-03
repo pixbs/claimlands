@@ -379,9 +379,24 @@
       }
 
       fetch("planet.json")
-        .then((r) => {
+        .then(async (r) => {
           if (!r.ok) throw new Error(`planet.json returned ${r.status}`);
-          return r.json();
+          // The Worker serves index.html for anything it cannot find
+          // (`not_found_handling: single-page-application`), so a planet that
+          // never made it into the deploy arrives as a 200 full of HTML and
+          // dies on JSON.parse with a message about column 1. Say what is
+          // actually wrong instead.
+          const type = r.headers.get("content-type") || "";
+          const body = await r.text();
+          if (!type.includes("json") && body.trimStart().startsWith("<")) {
+            throw new Error(
+              "the deployed bundle has no planet.json, so the server returned " +
+                "index.html instead. The preview build generates it — check the " +
+                "`Generate the planet the debug pages draw` step and that the " +
+                "deploy downloaded the build artifact."
+            );
+          }
+          return JSON.parse(body);
         })
         .then((data) => {
           planet = data;
