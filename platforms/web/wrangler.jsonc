@@ -1,0 +1,31 @@
+{
+  // The preview: a Worker serving the WebGPU build as static assets.
+  //
+  // There is deliberately no `main` script. A Worker with only `assets` is a
+  // static site, which is all the preview needs — the wasm bundle does the
+  // work in the browser.
+  "name": "claimlands",
+
+  // `preview_urls` and `compatibility_date` are load-bearing *together*.
+  //
+  // Per-version preview URLs require this flag AND a compatibility date of
+  // 2026-03-01 or later. With either missing, `wrangler versions upload`
+  // succeeds and simply never mints a URL — it reads as a silent no-op rather
+  // than an error, which is an unpleasant thing to debug. Do not lower the
+  // date without removing the flag and the workflow that depends on it.
+  "compatibility_date": "2026-03-01",
+  "preview_urls": true,
+
+  "assets": {
+    "directory": "./public",
+
+    // Serve index.html for unknown paths so client-side routing works once the
+    // preview grows one. `single-page-application` also stops a typo in a debug
+    // panel's URL from returning a bare 404 with no way back.
+    "not_found_handling": "single-page-application"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

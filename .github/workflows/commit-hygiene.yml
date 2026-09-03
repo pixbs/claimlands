@@ -16,7 +16,7 @@ jobs:
     name: no AI attribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # The whole PR range must be visible, not just the tip.
           fetch-depth: 0
@@ -40,7 +40,7 @@ jobs:
     name: conventional commits
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -70,7 +70,7 @@ jobs:
     name: pull request hygiene
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install the pinned toolchain
         run: rustup toolchain install
