@@ -39,13 +39,39 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The planet the debug pages draw is generated from *this commit's*
+      # worldgen, never committed. A checked-in blob would show whatever it was
+      # generated from, which is exactly the thing a preview exists to stop.
+      #
+      # Fixed frequency and seed, per ADR 0007: two previews from two pull
+      # requests have to be directly comparable, and a seed that moves would
+      # make every change look like it changed the planet.
+      - name: Generate the planet the debug pages draw
+        run: |
+          cargo run --locked --release -p lands-cli -- worldgen export \
+            --freq 8 --seed 0 --format json --kind tiles \
+            --out platforms/web/public/planet.json
+
       # Once the harness lands (#44) this is where the wasm bundle is built and
-      # copied into platforms/web/public. Until then the directory holds a
-      # placeholder page, and this step only proves it is deployable.
+      # copied into platforms/web/public. Until then the directory holds the
+      # placeholder page and the worldgen debug views, and this step only proves
+      # they are deployable.
       - name: Check the bundle exists
         run: |
           if [ ! -f platforms/web/public/index.html ]; then
             echo "::error::platforms/web/public/index.html is missing — there is nothing to deploy."
+            exit 1
+          fi
+          # A cover page with no planet beside it deploys cleanly and shows a
+          # load error, which reads as a broken renderer rather than a missing
+          # build step. Fail here instead.
+          if [ ! -s platforms/web/public/planet.json ]; then
+            echo "::error::platforms/web/public/planet.json is missing or empty — the export step did not run."
             exit 1
           fi
           echo "Bundle contents:"

@@ -105,6 +105,10 @@ enum WorldgenAction {
         /// The tile board, or the triangle mesh it is the dual of.
         #[arg(long, value_enum, default_value_t = worldgen::Kind::Tiles)]
         kind: worldgen::Kind,
+        /// World seed. Decides the terrain and the cover, which JSON carries
+        /// and OBJ has nowhere to put. The mesh is the same for every seed.
+        #[arg(long, default_value_t = 0)]
+        seed: u64,
         /// Where to write it. Overwritten if it already exists.
         #[arg(long)]
         out: PathBuf,
@@ -139,8 +143,9 @@ fn run(cli: Cli) -> Result<(), String> {
                 freq,
                 format,
                 kind,
+                seed,
                 out,
-            } => worldgen::export(freq, format, kind, &out),
+            } => worldgen::export(freq, format, kind, seed, &out),
         },
         Command::RulesHash => {
             println!("{:#018x}", Ruleset::bundled().hash());
