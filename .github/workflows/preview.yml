@@ -1,0 +1,156 @@
+name: Preview
+
+# Every pull request gets a deployed preview URL, commented on the pull request.
+#
+# The point of the preview is that it is reachable *from the pull request*.
+# Fetching a branch and building it locally is friction paid on every review,
+# and friction paid every time is friction eventually skipped.
+#
+# Why the build is a separate job from the deploy:
+#
+# The build is the required check. It runs everywhere, including on pull
+# requests from forks, where repository secrets are deliberately unavailable.
+# If deploying were part of the same job, every fork pull request would fail a
+# required check for a reason its author could do nothing about.
+#
+# So: `build` gates the merge, `deploy` is best-effort and skips cleanly when
+# there is no token to use.
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  # One deployment per pull request. A new push supersedes the one in flight
+  # rather than racing it.
+  group: preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build:
+    name: preview build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Once the harness lands (#44) this is where the wasm bundle is built and
+      # copied into platforms/web/public. Until then the directory holds a
+      # placeholder page, and this step only proves it is deployable.
+      - name: Check the bundle exists
+        run: |
+          if [ ! -f platforms/web/public/index.html ]; then
+            echo "::error::platforms/web/public/index.html is missing — there is nothing to deploy."
+            exit 1
+          fi
+          echo "Bundle contents:"
+          ls -la platforms/web/public
+
+      - name: Validate the Worker configuration
+        working-directory: platforms/web
+        run: |
+          # `preview_urls` and a compatibility_date of 2026-03-01 or later are
+          # required *together* for per-version URLs. Without both, `versions
+          # upload` succeeds and silently mints no URL, which looks like the
+          # deploy worked and reads as a mystery later. Fail loudly here instead.
+          grep -q '"preview_urls": *true' wrangler.jsonc || {
+            echo "::error::wrangler.jsonc must set \"preview_urls\": true, or no preview URL is generated."
+            exit 1
+          }
+          date=$(grep -oE '"compatibility_date": *"[0-9-]+"' wrangler.jsonc | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')
+          if [ -z "$date" ]; then
+            echo "::error::wrangler.jsonc has no compatibility_date."
+            exit 1
+          fi
+          if [ "$date" \< "2026-03-01" ]; then
+            echo "::error::compatibility_date is $date; per-version preview URLs need 2026-03-01 or later."
+            exit 1
+          fi
+          echo "Worker configuration is valid (compatibility_date $date, preview_urls on)."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-bundle
+          path: platforms/web/public
+          retention-days: 7
+
+  deploy:
+    name: preview deploy
+    needs: build
+    runs-on: ubuntu-latest
+    # Secrets are not exposed to pull requests from forks, so there is nothing
+    # to deploy with. Skip rather than fail: `build` above is what gates merge.
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the Cloudflare secrets are present
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=""
+          [ -n "$TOKEN" ]   || missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -n "$ACCOUNT" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing"
+            echo "::error::Create an API token from the 'Edit Cloudflare Workers' template and add both secrets."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # A pull request uploads a *version*, which mints a preview URL without
+      # touching production. Only the default branch actually deploys.
+      - name: Upload a preview version
+        id: preview
+        if: github.event_name == 'pull_request'
+        working-directory: platforms/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          npx --yes wrangler@4 versions upload 2>&1 | tee upload.log
+          # wrangler prints the URL rather than returning it as a structured
+          # value, so it is scraped. If that ever stops matching, the step below
+          # fails loudly instead of commenting an empty link.
+          url=$(grep -oE 'https://[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev' upload.log | head -1)
+          if [ -z "$url" ]; then
+            echo "::error::wrangler uploaded a version but printed no preview URL."
+            echo "::error::Check that preview_urls is enabled and the compatibility_date is 2026-03-01 or later."
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview: $url"
+
+      - name: Comment the preview URL
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          # One comment, updated in place, rather than a new one per push.
+          header: preview
+          message: |
+            ### Preview
+
+            **${{ steps.preview.outputs.url }}**
+
+            Built from `${{ github.event.pull_request.head.sha }}`. Updated on every push.
+
+            Needs a browser with WebGPU — desktop Chrome or Edge. The page reports
+            whether yours has it.
+
+      - name: Deploy to production
+        if: github.event_name != 'pull_request'
+        working-directory: platforms/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy
