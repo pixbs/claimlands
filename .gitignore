@@ -11,6 +11,12 @@
 /platforms/android/local.properties
 /platforms/web/pkg
 
+# The planet the debug pages draw is generated from the worldgen in the commit
+# being previewed (see .github/workflows/preview.yml). Committing it would show
+# a reviewer whatever it was generated from, which is the one thing a preview
+# exists to prevent.
+/platforms/web/public/planet.json
+
 # Test output (references are committed; actuals are not)
 /tests/visual/actual
 /tests/visual/diff

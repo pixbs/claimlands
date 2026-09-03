@@ -39,13 +39,41 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Install the pinned toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
+      # The planet the debug pages draw is generated from *this commit's*
+      # worldgen, never committed. A checked-in blob would show whatever it was
+      # generated from, which is exactly the thing a preview exists to stop.
+      #
+      # Fixed frequency and seed, per ADR 0007: two previews from two pull
+      # requests have to be directly comparable, and a seed that moves would
+      # make every change look like it changed the planet.
+      - name: Generate the planet the debug pages draw
+        run: |
+          cargo run --locked --release -p lands-cli -- worldgen export \
+            --freq 8 --seed 0 --format json --kind tiles \
+            --out platforms/web/public/planet.json
+
       # Once the harness lands (#44) this is where the wasm bundle is built and
-      # copied into platforms/web/public. Until then the directory holds a
-      # placeholder page, and this step only proves it is deployable.
+      # copied into platforms/web/public. Until then the directory holds the
+      # placeholder page and the worldgen debug views, and this step only proves
+      # they are deployable.
       - name: Check the bundle exists
         run: |
           if [ ! -f platforms/web/public/index.html ]; then
             echo "::error::platforms/web/public/index.html is missing — there is nothing to deploy."
+            exit 1
+          fi
+          # A cover page with no planet beside it deploys cleanly and fails in
+          # the browser, which reads as a broken renderer rather than a missing
+          # file. This catches the export step not running; the deploy job
+          # checks the same thing again after the artifact hand-off, which is
+          # the other half and the one that actually reaches a viewer.
+          if [ ! -s platforms/web/public/planet.json ]; then
+            echo "::error::platforms/web/public/planet.json is missing or empty — the export step did not run."
             exit 1
           fi
           echo "Bundle contents:"
@@ -87,7 +115,33 @@ jobs:
     # to deploy with. Skip rather than fail: `build` above is what gates merge.
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
     steps:
+      # The checkout is for `wrangler.jsonc`. The *bundle* comes from the build
+      # job below, and the difference matters: anything the build generates is
+      # gitignored, so a checkout alone carries the pages and none of the data
+      # they draw.
       - uses: actions/checkout@v7
+
+      # Deploy the bytes the build job assembled and checked, not a second
+      # assembly of them that nothing verified. Without this the pages ship
+      # without their planet, `not_found_handling` serves index.html for the
+      # missing file, and the page fails on `JSON.parse` — a green pipeline
+      # and a broken preview, which is the worst of both.
+      - uses: actions/download-artifact@v7
+        with:
+          name: preview-bundle
+          path: platforms/web/public
+
+      - name: Check the bundle survived the hand-off
+        run: |
+          echo "Deploying:"
+          ls -la platforms/web/public
+          for file in index.html cover.html planet.json; do
+            if [ ! -s "platforms/web/public/$file" ]; then
+              echo "::error::platforms/web/public/$file is missing from the build artifact."
+              echo "::error::Deploying now would serve a page whose data 404s into index.html."
+              exit 1
+            fi
+          done
 
       - name: Check the Cloudflare secrets are present
         env:

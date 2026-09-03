@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Claimlands — cover seeding</title>
+    <style>
+      :root {
+        --deep: #0e0b16;
+        --panel: #161226;
+        --line: #2f2740;
+        --text: #ece4d4;
+        --muted: #8b809c;
+        --gold: #f2b45c;
+        --teal: #58c2b0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        padding: 2rem 1.5rem;
+        background: var(--deep);
+        color: var(--text);
+        font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main { max-width: 62rem; margin: 0 auto; }
+      h1 { font-size: 1.4rem; margin: 0 0 0.25rem; }
+      .sub { color: var(--muted); margin: 0 0 1.5rem; }
+      .stage {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 17rem;
+        gap: 1rem;
+        align-items: start;
+      }
+      @media (max-width: 52rem) { .stage { grid-template-columns: 1fr; } }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+      }
+      .card h2 {
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin: 0 0 0.75rem;
+      }
+      #globe {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #0b0813;
+        cursor: grab;
+        touch-action: none;
+      }
+      #globe.dragging { cursor: grabbing; }
+      .legend { list-style: none; margin: 0; padding: 0; }
+      .legend li {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.2rem 0;
+        cursor: pointer;
+        user-select: none;
+      }
+      .legend li.off { opacity: 0.35; }
+      .swatch {
+        width: 0.9rem;
+        height: 0.9rem;
+        border-radius: 3px;
+        border: 1px solid rgba(0, 0, 0, 0.45);
+        flex: none;
+      }
+      .legend .count { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+      .row { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+      button {
+        font: inherit;
+        font-size: 0.85rem;
+        color: var(--text);
+        background: #0b0813;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 0.3rem 0.7rem;
+        cursor: pointer;
+      }
+      button[aria-pressed="true"] { border-color: var(--teal); color: var(--teal); }
+      dl { margin: 0; font-size: 0.85rem; }
+      dt { color: var(--muted); margin-top: 0.5rem; }
+      dt:first-child { margin-top: 0; }
+      dd {
+        margin: 0;
+        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        overflow-wrap: anywhere;
+      }
+      p { margin: 0 0 0.75rem; }
+      p:last-child { margin-bottom: 0; }
+      .note { font-size: 0.85rem; color: var(--muted); }
+      a { color: var(--teal); }
+      code {
+        background: #0b0813;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 0.1em 0.4em;
+        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        font-size: 0.9em;
+        color: var(--teal);
+      }
+      .fail { color: #e0685f; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Cover seeding</h1>
+      <p class="sub">
+        Villages, woods and farmland grown in clumps on a frequency-8 planet.
+        Drag to turn it.
+      </p>
+
+      <div class="stage">
+        <div>
+          <canvas id="globe" width="1100" height="1100"></canvas>
+          <p class="note" id="status" style="margin-top: 0.75rem">Loading the planet…</p>
+        </div>
+
+        <div>
+          <div class="card">
+            <h2>Cover</h2>
+            <ul class="legend" id="legend"></ul>
+            <div class="row">
+              <button id="grown" aria-pressed="true">Grown</button>
+              <button id="scattered" aria-pressed="false">Scattered</button>
+            </div>
+            <p class="note" style="margin-top: 0.75rem">
+              Scattered sprinkles the same tile counts over the same land. Every
+              share statistic is identical; that is the point.
+            </p>
+          </div>
+
+          <div class="card" style="margin-top: 1rem">
+            <h2>This planet</h2>
+            <dl id="facts"></dl>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1rem">
+        <h2>What to look for</h2>
+        <p>
+          Cover should arrive in <strong>blobs</strong>, not confetti — one lone
+          hex of wheat is not a farm, and the renderer merges neighbouring tiles
+          of a kind into a single parcelled zone, which only shows when tiles
+          come in groups. Flip to <em>Scattered</em> to see what the same
+          numbers look like when they are not clumped.
+        </p>
+        <p>
+          It should also be spread over the whole planet rather than gathered on
+          one face of the icosahedron, and it must never touch the sea. Turn the
+          globe right round and check both.
+        </p>
+        <p class="note">
+          Flat polygons on a 2D canvas, drawn straight from the tile graph — a
+          debug view of what <code>lands-worldgen</code> produced, not the game
+          renderer. The WebGPU pipeline arrives in
+          <a href="https://github.com/pixbs/claimlands/issues/44">#44</a> and
+          the panel registry in
+          <a href="https://github.com/pixbs/claimlands/issues/45">#45</a>; this
+          page is what a reviewer gets until then.
+        </p>
+      </div>
+    </main>
+
+    <script>
+      // Straight from docs/visual-language.md, so the preview reads the way the
+      // finished planet is meant to.
+      const PALETTE = {
+        water: "#1a4d78",
+        bare: "#5aa444",
+        forest: "#3a7a26",
+        village: "#a24b32",
+        field: "#c9ac72",
+      };
+      const KINDS = ["village", "forest", "field"];
+      const LABEL = { village: "Villages", forest: "Woods", field: "Fields" };
+
+      const canvas = document.getElementById("globe");
+      const ctx = canvas.getContext("2d");
+      const statusEl = document.getElementById("status");
+
+      const hidden = new Set();
+      let planet = null;
+      let layout = null; // tile id -> cover name, for whichever mode is showing
+      let mode = "grown";
+      // Yaw and pitch of the planet. The camera is fixed on +Z and the planet
+      // turns, which is the prototype's model and the one #44 will inherit.
+      let yaw = 0.6;
+      let pitch = -0.35;
+
+      /* ---- projection ----------------------------------------------------- */
+
+      function rotate(p) {
+        const [x, y, z] = p;
+        const cy = Math.cos(yaw), sy = Math.sin(yaw);
+        const x1 = x * cy + z * sy;
+        const z1 = -x * sy + z * cy;
+        const cp = Math.cos(pitch), sp = Math.sin(pitch);
+        const y1 = y * cp - z1 * sp;
+        const z2 = y * sp + z1 * cp;
+        return [x1, y1, z2];
+      }
+
+      function draw() {
+        if (!planet) return;
+        const w = canvas.width, h = canvas.height;
+        const r = Math.min(w, h) * 0.46;
+        const cx = w / 2, cy = h / 2;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // The unlit far side, so the planet reads as a sphere rather than a
+        // disc of polygons floating in the dark.
+        ctx.fillStyle = "#0d1b2b";
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        const corners = planet.corners.map(rotate);
+
+        for (const tile of planet.tiles) {
+          const c = rotate(tile.center);
+          if (c[2] <= 0.02) continue; // Facing away: cull rather than overdraw.
+
+          const cover = tile.terrain === "water" ? "water" : layout[tile.id] || "bare";
+          if (cover !== "water" && hidden.has(cover)) continue;
+
+          ctx.beginPath();
+          for (let i = 0; i < tile.corners.length; i++) {
+            const p = corners[tile.corners[i]];
+            const x = cx + p[0] * r;
+            const y = cy - p[1] * r;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+
+          // Lambert-ish shading off the same vector the cull uses, so the
+          // limb darkens and the curvature is legible.
+          const shade = 0.45 + 0.55 * c[2];
+          ctx.fillStyle = tint(PALETTE[cover], shade);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(0,0,0,0.22)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+
+      function tint(hex, k) {
+        const n = parseInt(hex.slice(1), 16);
+        const c = (shift) => Math.round(Math.min(255, ((n >> shift) & 255) * k));
+        return `rgb(${c(16)}, ${c(8)}, ${c(0)})`;
+      }
+
+      /* ---- the scattered control ------------------------------------------ */
+
+      // The same tile counts, sprinkled uniformly over the same land. It has
+      // identical share statistics to the grown layout and a completely
+      // different planet, which is the whole reason this page exists.
+      function scatter() {
+        const land = planet.tiles.filter((t) => t.terrain === "land").map((t) => t.id);
+        // A seeded generator, so the control is the same on every reload and
+        // two reviewers are looking at the same picture.
+        let s = 0x9e3779b9;
+        const next = () => {
+          s ^= s << 13; s >>>= 0;
+          s ^= s >> 17;
+          s ^= s << 5; s >>>= 0;
+          return s / 4294967296;
+        };
+        const out = {};
+        for (const kind of KINDS) {
+          for (let n = planet.cover_counts[kind]; n > 0 && land.length; n--) {
+            const at = Math.floor(next() * land.length);
+            out[land[at]] = kind;
+            land[at] = land[land.length - 1];
+            land.pop();
+          }
+        }
+        return out;
+      }
+
+      function grown() {
+        const out = {};
+        for (const tile of planet.tiles) {
+          if (tile.cover !== "bare") out[tile.id] = tile.cover;
+        }
+        return out;
+      }
+
+      /* ---- chrome ---------------------------------------------------------- */
+
+      function buildLegend() {
+        const list = document.getElementById("legend");
+        const rows = [
+          ...KINDS.map((k) => [k, LABEL[k], planet.cover_counts[k]]),
+          ["bare", "Bare land", planet.land_count - covered()],
+          ["water", "Sea", planet.tile_count - planet.land_count],
+        ];
+        list.innerHTML = "";
+        for (const [key, label, count] of rows) {
+          const li = document.createElement("li");
+          li.innerHTML =
+            `<span class="swatch" style="background:${PALETTE[key]}"></span>` +
+            `<span>${label}</span><span class="count">${count}</span>`;
+          li.title = "Show or hide";
+          li.addEventListener("click", () => {
+            if (hidden.has(key)) hidden.delete(key);
+            else hidden.add(key);
+            li.classList.toggle("off", hidden.has(key));
+            draw();
+          });
+          list.appendChild(li);
+        }
+      }
+
+      function covered() {
+        return KINDS.reduce((n, k) => n + planet.cover_counts[k], 0);
+      }
+
+      function buildFacts() {
+        const share = (n) => `${((n / planet.land_count) * 100).toFixed(1)}% of land`;
+        const facts = [
+          ["Seed", planet.seed],
+          ["Tiles", `${planet.tile_count} (${planet.land_count} land)`],
+          ["Villages", `${planet.cover_counts.village} — ${share(planet.cover_counts.village)}`],
+          ["Woods", `${planet.cover_counts.forest} — ${share(planet.cover_counts.forest)}`],
+          ["Fields", `${planet.cover_counts.field} — ${share(planet.cover_counts.field)}`],
+          ["Cover hash", planet.cover_hash],
+          ["Terrain hash", planet.terrain_hash],
+        ];
+        document.getElementById("facts").innerHTML = facts
+          .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`)
+          .join("");
+      }
+
+      function setMode(next) {
+        mode = next;
+        layout = mode === "grown" ? grown() : scatter();
+        document.getElementById("grown").setAttribute("aria-pressed", String(mode === "grown"));
+        document
+          .getElementById("scattered")
+          .setAttribute("aria-pressed", String(mode === "scattered"));
+        draw();
+      }
+
+      document.getElementById("grown").addEventListener("click", () => setMode("grown"));
+      document.getElementById("scattered").addEventListener("click", () => setMode("scattered"));
+
+      let dragging = null;
+      canvas.addEventListener("pointerdown", (e) => {
+        dragging = { x: e.clientX, y: e.clientY };
+        canvas.classList.add("dragging");
+        canvas.setPointerCapture(e.pointerId);
+      });
+      canvas.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        yaw += (e.clientX - dragging.x) * 0.006;
+        pitch += (e.clientY - dragging.y) * 0.006;
+        pitch = Math.max(-1.5, Math.min(1.5, pitch));
+        dragging = { x: e.clientX, y: e.clientY };
+        draw();
+      });
+      for (const ev of ["pointerup", "pointercancel"]) {
+        canvas.addEventListener(ev, () => {
+          dragging = null;
+          canvas.classList.remove("dragging");
+        });
+      }
+
+      fetch("planet.json")
+        .then(async (r) => {
+          if (!r.ok) throw new Error(`planet.json returned ${r.status}`);
+          // The Worker serves index.html for anything it cannot find
+          // (`not_found_handling: single-page-application`), so a planet that
+          // never made it into the deploy arrives as a 200 full of HTML and
+          // dies on JSON.parse with a message about column 1. Say what is
+          // actually wrong instead.
+          const type = r.headers.get("content-type") || "";
+          const body = await r.text();
+          if (!type.includes("json") && body.trimStart().startsWith("<")) {
+            throw new Error(
+              "the deployed bundle has no planet.json, so the server returned " +
+                "index.html instead. The preview build generates it — check the " +
+                "`Generate the planet the debug pages draw` step and that the " +
+                "deploy downloaded the build artifact."
+            );
+          }
+          return JSON.parse(body);
+        })
+        .then((data) => {
+          planet = data;
+          buildLegend();
+          buildFacts();
+          setMode("grown");
+          statusEl.textContent =
+            `Seed ${planet.seed}, ${planet.tile_count} tiles. ` +
+            `Cover hash ${planet.cover_hash} — the value pinned in ` +
+            `crates/lands-worldgen/tests/cover.rs.`;
+        })
+        .catch((e) => {
+          statusEl.textContent = `Could not load planet.json: ${e.message}`;
+          statusEl.className = "note fail";
+        });
+    </script>
+  </body>
+</html>

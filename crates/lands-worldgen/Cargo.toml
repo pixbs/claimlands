@@ -7,6 +7,12 @@ publish.workspace = true
 
 [dependencies]
 lands-core = { workspace = true }
+# Cover seeding reads its shares from `assets/worldgen/cover.ron`, for the
+# reason ADR 0006 gives. Same three crates `lands-rules` loads its own data
+# with, and for the same reason: a balance number should be a data diff.
+ron = { workspace = true }
+serde = { workspace = true, features = ["std"] }
+thiserror = { workspace = true }
 
 [dev-dependencies]
 lands-testkit = { workspace = true }

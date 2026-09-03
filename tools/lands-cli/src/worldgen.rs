@@ -14,17 +14,20 @@
 //! * **OBJ** opens in every 3D viewer and most editors with no setup. Use it to
 //!   see the shape.
 //! * **JSON** carries what OBJ cannot — tile ids, neighbour lists, the
-//!   fingerprints, and later terrain and cover. Use it for a throwaway browser
-//!   viewer or to diff two planets.
+//!   fingerprints, and the terrain and cover a seed produces. Use it for a
+//!   browser viewer or to diff two planets. `platforms/web/public/cover.html`
+//!   is the viewer the pull-request preview serves.
 //!
 //! Both are written by hand rather than through a serialisation crate. The
 //! export must be byte-identical across runs, and the cheapest way to promise
 //! that is to control every byte: fixed-precision floats, no map iteration, no
 //! dependency that could change its mind about field order in a patch release.
 
-use lands_core::prelude::TileId;
+use lands_core::prelude::{Terrain, TileId};
+use lands_worldgen::cover::{Cover, CoverRules, cover};
 use lands_worldgen::geodesic::{Geodesic, MAX_FREQUENCY, geodesic};
 use lands_worldgen::goldberg::{Goldberg, goldberg};
+use lands_worldgen::terrain::terrain;
 use lands_worldgen::vec3::Vec3;
 use std::fmt::Write as _;
 use std::path::Path;
@@ -60,14 +63,25 @@ impl Kind {
 }
 
 /// Generate a planet at `frequency` and write it to `out`.
-pub fn export(frequency: u32, format: Format, kind: Kind, out: &Path) -> Result<(), String> {
+///
+/// `seed` decides the terrain and the cover grown on it. The geometry does not
+/// depend on it — a frequency-8 planet has the same tiles and the same
+/// numbering for every seed — so only the tile JSON, which is the only output
+/// with somewhere to put them, reads it at all.
+pub fn export(
+    frequency: u32,
+    format: Format,
+    kind: Kind,
+    seed: u64,
+    out: &Path,
+) -> Result<(), String> {
     check_frequency(frequency)?;
 
     let text = match (kind, format) {
         (Kind::Mesh, Format::Obj) => obj_mesh(&geodesic(frequency)),
         (Kind::Mesh, Format::Json) => json_mesh(&geodesic(frequency)),
         (Kind::Tiles, Format::Obj) => obj_tiles(&goldberg(frequency)),
-        (Kind::Tiles, Format::Json) => json_tiles(&goldberg(frequency)),
+        (Kind::Tiles, Format::Json) => json_tiles(&goldberg(frequency), seed),
     };
 
     std::fs::write(out, &text).map_err(|e| format!("could not write {}: {e}", out.display()))?;
@@ -239,12 +253,28 @@ fn json_mesh(mesh: &Geodesic) -> String {
     out
 }
 
-fn json_tiles(planet: &Goldberg) -> String {
+/// What the seeder put on a tile, as the viewer's vocabulary.
+///
+/// Water is not "no cover": a tile with nothing on it is bare land, and the
+/// two must be told apart or a reviewer cannot see where the coastline is.
+fn cover_name(cover: Option<Cover>) -> &'static str {
+    match cover {
+        None => "bare",
+        Some(Cover::Village) => "village",
+        Some(Cover::Forest) => "forest",
+        Some(Cover::Field) => "field",
+    }
+}
+
+fn json_tiles(planet: &Goldberg, seed: u64) -> String {
     let topology = planet.topology();
+    let land = terrain(planet, seed);
+    let grown = cover(planet, &land, seed, &CoverRules::bundled());
 
     let mut out = String::from("{\n");
     let _ = writeln!(out, "  \"kind\": \"tiles\",");
     let _ = writeln!(out, "  \"frequency\": {},", planet.frequency());
+    let _ = writeln!(out, "  \"seed\": {seed},");
     let _ = writeln!(out, "  \"tile_count\": {},", planet.tile_count());
     let _ = writeln!(out, "  \"pentagon_count\": {},", planet.pentagons().count());
     let _ = writeln!(out, "  \"corner_count\": {},", planet.corners().len());
@@ -258,6 +288,29 @@ fn json_tiles(planet: &Goldberg) -> String {
         "  \"structure_hash\": \"{:#018x}\",",
         planet.structure_hash()
     );
+
+    // The two fingerprints this seed is pinned by, so a viewer can say which
+    // planet it is showing and a reviewer can tie the picture to the snapshot
+    // in `crates/lands-worldgen/tests/`.
+    let _ = writeln!(
+        out,
+        "  \"terrain_hash\": \"{:#018x}\",",
+        land.terrain_hash()
+    );
+    let _ = writeln!(out, "  \"cover_hash\": \"{:#018x}\",", grown.cover_hash());
+    let _ = writeln!(out, "  \"land_count\": {},", land.land_count());
+
+    out.push_str("  \"cover_counts\": {");
+    for (i, kind) in Cover::ALL.iter().enumerate() {
+        let _ = write!(
+            out,
+            "{}\"{}\": {}",
+            if i > 0 { ", " } else { " " },
+            cover_name(Some(*kind)),
+            grown.count(*kind)
+        );
+    }
+    out.push_str(" },\n");
 
     out.push_str("  \"corners\": [\n");
     for (i, c) in planet.corners().iter().enumerate() {
@@ -287,6 +340,17 @@ fn json_tiles(planet: &Goldberg) -> String {
         json_list(
             &mut out,
             topology.neighbors(TileId(i as u32)).iter().map(|t| t.0),
+        );
+        let tile = TileId(i as u32);
+        let _ = write!(
+            out,
+            ", \"terrain\": \"{}\", \"cover\": \"{}\"",
+            if land.get(tile) == Terrain::Land {
+                "land"
+            } else {
+                "water"
+            },
+            cover_name(grown.get(tile))
         );
         out.push_str(if i == last { " }\n" } else { " },\n" });
     }
@@ -379,19 +443,69 @@ mod tests {
         assert!(mesh.contains("\"vertex_count\": 642"));
         assert!(mesh.contains("\"triangle_count\": 1280"));
 
-        let tiles = json_tiles(&goldberg(8));
+        let tiles = json_tiles(&goldberg(8), 0);
         assert!(tiles.contains("\"adjacency_hash\": \"0x439681c106a33e7e\""));
         assert!(tiles.contains("\"structure_hash\": \"0x6a48f634d1463e2e\""));
         assert!(tiles.contains("\"tile_count\": 642"));
         assert!(tiles.contains("\"pentagon_count\": 12"));
         assert!(tiles.contains("\"corner_count\": 1280"));
+
+        // The seed's own two fingerprints, which are what let a reviewer tie
+        // the planet on screen to the snapshots in `crates/lands-worldgen`.
+        // These are the same values `tests/terrain.rs` and `tests/cover.rs`
+        // pin for (n=8, seed 0); if they move, the preview is drawing a
+        // different planet than the one the test suite is guarding.
+        assert!(tiles.contains("\"seed\": 0"));
+        assert!(tiles.contains("\"terrain_hash\": \"0x617aeb5e4096637d\""));
+        assert!(tiles.contains("\"cover_hash\": \"0x6048da58d8eb54a8\""));
+        assert!(tiles.contains("\"land_count\": 270"));
+        assert!(
+            tiles.contains("\"cover_counts\": { \"village\": 22, \"forest\": 54, \"field\": 43 }")
+        );
+    }
+
+    #[test]
+    fn the_tile_json_never_puts_cover_in_the_sea() {
+        // The acceptance criterion the preview exists to let somebody *see*,
+        // checked here as well because a reviewer looking at one hemisphere
+        // cannot see the other one.
+        let json = json_tiles(&goldberg(8), 0);
+        assert_eq!(
+            json.matches("\"terrain\": \"water\", \"cover\": \"bare\"")
+                .count(),
+            json.matches("\"terrain\": \"water\"").count(),
+            "a water tile is carrying cover"
+        );
+        // And the seed genuinely grows all three kinds, so the assertion above
+        // is not passing on an empty planet.
+        for kind in ["village", "forest", "field"] {
+            assert!(
+                json.contains(&format!("\"cover\": \"{kind}\"")),
+                "no {kind} on the planet at all"
+            );
+        }
+    }
+
+    #[test]
+    fn a_different_seed_gives_a_different_planet_but_the_same_geometry() {
+        // The geometry is the frequency's, the cover is the seed's. A viewer
+        // that showed the same planet for every seed would look right and be
+        // useless.
+        let planet = goldberg(4);
+        let a = json_tiles(&planet, 1);
+        let b = json_tiles(&planet, 2);
+        assert_ne!(a, b);
+        // Same corners, so only the per-tile data moved.
+        let corners = |j: &str| j.split("\"tiles\": [").next().unwrap().to_owned();
+        assert_ne!(corners(&a), corners(&b), "the fingerprints should differ");
+        assert_eq!(a.matches("\"id\":").count(), b.matches("\"id\":").count());
     }
 
     #[test]
     fn the_tile_json_reports_the_neighbours_topology_holds() {
         let planet = goldberg(8);
         let topology = planet.topology();
-        let json = json_tiles(&planet);
+        let json = json_tiles(&planet, 0);
 
         let expected: Vec<u32> = topology.neighbors(TileId(0)).iter().map(|t| t.0).collect();
         let rendered = format!(
@@ -420,7 +534,7 @@ mod tests {
             assert_eq!(obj_mesh(&geodesic(n)), obj_mesh(&geodesic(n)));
             assert_eq!(obj_tiles(&goldberg(n)), obj_tiles(&goldberg(n)));
             assert_eq!(json_mesh(&geodesic(n)), json_mesh(&geodesic(n)));
-            assert_eq!(json_tiles(&goldberg(n)), json_tiles(&goldberg(n)));
+            assert_eq!(json_tiles(&goldberg(n), 7), json_tiles(&goldberg(n), 7));
         }
     }
 

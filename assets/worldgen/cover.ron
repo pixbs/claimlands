@@ -1,0 +1,51 @@
+// Claimlands — cover seeding.
+//
+// This file is DATA, not code, for the reason ADR 0006 gives: how much of a
+// planet starts out as village, wood and farmland is a thing somebody tunes by
+// looking at a planet, and a tuning pass should be a one-line diff a reviewer
+// can read rather than a code change carrying a regression with it.
+//
+// It is deliberately NOT part of `assets/rules/default.ron`. Everything in
+// there is fingerprinted by `Ruleset::hash()` and recorded in every golden
+// replay, so putting a worldgen number in it would invalidate the whole replay
+// corpus every time somebody tuned the amount of farmland — a change that
+// cannot possibly alter how a turn resolves. Cover seeding runs once, before
+// the first turn, and belongs to `lands-worldgen`.
+//
+// Every number is an integer percent, for the same reason `LAND_PERCENT` is:
+// a share is the numerator of a tile count, and `round(n * 0.16)` in floating
+// point is a different function from `(n * 16 + 50) / 100` at every `n` where
+// the product lands on a half.
+//
+// The values are the prototype's (`reference/prototype/hex-planet.html`):
+// TOWN_SHARE 0.08, WOOD_SHARE 0.20, FARM_SHARE 0.16, the per-kind cling
+// probabilities 0.92 / 0.90 / 0.85 that `seedCover` grows its clumps with, and
+// the 0.62 that decays them.
+//
+// Changing anything here moves the snapshots in `tests/cover.rs`. That is what
+// they are for: they say which planets just changed.
+
+(
+    version: 1,
+
+    // A clump grows outward one ring at a time. Each ring clings with a
+    // probability the ring before it had, multiplied by `ring_decay_percent`,
+    // and the growth stops once that falls to `ring_floor_percent`. From 92%
+    // that is four rings; from 85%, four as well.
+    //
+    // Higher decay makes bigger, blobbier clumps; a floor at or above every
+    // cling probability makes cover that never grows at all, which is exactly
+    // the scattered confetti the algorithm exists to avoid.
+    ring_decay_percent: 62,
+    ring_floor_percent: 20,
+
+    // The ORDER the kinds are seeded in is not data. It is load-bearing —
+    // villages claim first, woods fill in around them, fields take what is
+    // left — so it lives in `Cover::ALL` where it can carry its reasoning and
+    // be pinned by a test. Only the numbers are here.
+    kinds: {
+        Village: (share_percent: 8,  cling_percent: 92),
+        Forest:  (share_percent: 20, cling_percent: 90),
+        Field:   (share_percent: 16, cling_percent: 85),
+    },
+)
