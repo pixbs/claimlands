@@ -117,11 +117,32 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          set -o pipefail
+          set +e
           npx --yes wrangler@4 versions upload 2>&1 | tee upload.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          # A version can only be uploaded against a Worker that already exists,
+          # and the Worker is created by the first deploy from master. So on a
+          # brand-new Cloudflare account the first pull request has nothing to
+          # upload against — through no fault of its author.
+          #
+          # Say so and pass, rather than failing a check nobody can act on. It
+          # resolves itself the moment anything merges.
+          if grep -q "does not yet exist" upload.log; then
+            echo "bootstrap=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::The Worker does not exist yet; it is created by the first deploy from master."
+            exit 0
+          fi
+
+          if [ "$status" -ne 0 ]; then
+            echo "::error::wrangler versions upload failed with exit code $status."
+            exit "$status"
+          fi
+
           # wrangler prints the URL rather than returning it as a structured
-          # value, so it is scraped. If that ever stops matching, the step below
-          # fails loudly instead of commenting an empty link.
+          # value, so it is scraped. If that ever stops matching, fail loudly
+          # instead of commenting an empty link.
           url=$(grep -oE 'https://[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev' upload.log | head -1)
           if [ -z "$url" ]; then
             echo "::error::wrangler uploaded a version but printed no preview URL."
@@ -132,7 +153,7 @@ jobs:
           echo "Preview: $url"
 
       - name: Comment the preview URL
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.preview.outputs.url != ''
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           # One comment, updated in place, rather than a new one per push.
@@ -146,6 +167,23 @@ jobs:
 
             Needs a browser with WebGPU — desktop Chrome or Edge. The page reports
             whether yours has it.
+
+      - name: Explain that the Worker is not created yet
+        if: github.event_name == 'pull_request' && steps.preview.outputs.bootstrap == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: preview
+          message: |
+            ### Preview
+
+            Not available for this pull request: the `claimlands` Worker does not
+            exist on Cloudflare yet.
+
+            A version can only be uploaded against an existing Worker, and the
+            Worker is created by the first deploy from `master`. Once anything
+            merges, every pull request after it gets a preview link here.
+
+            Nothing to fix in this branch.
 
       - name: Deploy to production
         if: github.event_name != 'pull_request'
